@@ -29,7 +29,7 @@ export default function Hero() {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 bg-[#74C69D]/20 border border-[#74C69D]/40 rounded-full px-4 py-1.5 mb-6 backdrop-blur-sm">
               <span className="w-2 h-2 bg-[#74C69D] rounded-full animate-pulse" />
-              <span className="text-[#74C69D] text-sm font-medium">Pakistan's Trusted Agri Store</span>
+              <span className="text-[#74C69D] text-sm font-medium">India's Trusted Agri Store</span>
             </div>
 
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-tight mb-6">

@@ -84,7 +84,7 @@ export default function Weather() {
           <div className="flex gap-3 mb-8">
             <input
               type="text"
-              placeholder="Enter city name (e.g. Lahore, Karachi...)"
+              placeholder="Enter city name (e.g. Mumbai, Delhi, Pune...)"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && fetchWeather()}

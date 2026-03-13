@@ -10,7 +10,7 @@ export default function Products() {
             Featured <span className="text-[#2D6A4F]">Products</span>
           </h2>
           <p className="text-gray-500 text-lg max-w-xl mx-auto">
-            Top-rated agriculture products trusted by thousands of farmers across Pakistan.
+            Top-rated agriculture products trusted by thousands of farmers across India.
           </p>
         </div>
 

@@ -22,7 +22,7 @@ function Footer() {
               </span>
             </div>
             <p className="text-[#B7E4C7] leading-relaxed text-sm">
-              Pakistan's trusted agriculture companion. Empowering farmers with premium products and smart tools since 2009.
+              India's trusted agriculture companion. Empowering farmers with premium products and smart tools since 2009.
             </p>
             <div className="flex gap-3 mt-5">
               {["📘", "📸", "▶️", "🐦"].map((icon, i) => (
