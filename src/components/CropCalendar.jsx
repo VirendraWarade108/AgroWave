@@ -88,11 +88,9 @@ export default function CropCalendar() {
                 </div>
 
                 <a
-                  href="#products"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.querySelector("#products")?.scrollIntoView({ behavior: "smooth" });
-                  }}
+                  href="https://48cdqc-i6.myshopify.com/collections/all"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="block w-full py-3 text-center text-sm font-bold text-[#2D6A4F] bg-[#74C69D]/20 hover:bg-[#2D6A4F] hover:text-white rounded-xl transition-all duration-200"
                 >
                   🛒 Shop Related Products

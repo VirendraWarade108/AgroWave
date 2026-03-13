@@ -147,11 +147,9 @@ export default function Calculator() {
               </div>
 
               <a
-                href="#products"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.querySelector("#products")?.scrollIntoView({ behavior: "smooth" });
-                }}
+                href="https://48cdqc-i6.myshopify.com/collections/fertilizers"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="block w-full py-4 bg-[#74C69D] text-[#1B4332] font-black text-lg rounded-2xl text-center hover:bg-white transition-colors duration-200"
               >
                 🛒 Buy Now – Shop Fertilizers

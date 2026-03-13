@@ -63,9 +63,9 @@ function Footer() {
           <div>
             <h4 className="font-black text-[#74C69D] mb-4 uppercase tracking-wide text-sm">Contact</h4>
             <div className="flex flex-col gap-3 text-sm text-gray-300">
-              <p>📍 Main Agri Market, Faisalabad, Punjab</p>
-              <p>📧 info@agrosmart.pk</p>
-              <p>📞 +92 300 123 4567</p>
+              <p>📍 India</p>
+              <p>📧 info@agrowave.in</p>
+              <p>📞 +91 85548 79079</p>
               <p>⏰ Mon–Sat: 8AM – 7PM</p>
             </div>
           </div>

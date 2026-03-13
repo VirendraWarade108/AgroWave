@@ -83,7 +83,7 @@ export default function Contact() {
           <div className="flex flex-col gap-6">
             {/* WhatsApp CTA */}
             <a
-              href="https://wa.me/923001234567"
+              href="https://wa.me/918554879079"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-5 bg-[#25D366] rounded-3xl p-7 text-white shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group"
@@ -94,7 +94,7 @@ export default function Contact() {
               <div>
                 <div className="font-black text-xl">Chat on WhatsApp</div>
                 <div className="text-green-100 text-sm mt-0.5">Instant reply for bulk orders</div>
-                <div className="font-bold text-lg mt-1">+92 300 123 4567</div>
+                <div className="font-bold text-lg mt-1">+91 85548 79079</div>
               </div>
             </a>
 
@@ -106,12 +106,12 @@ export default function Contact() {
                   {
                     icon: "📍",
                     label: "Address",
-                    value: "Main Agri Market, Faisalabad, Punjab, Pakistan",
+                    value: "India",
                   },
                   {
                     icon: "📧",
                     label: "Email",
-                    value: "info@agrosmart.pk",
+                    value: "info@agrowave.in",
                   },
                   {
                     icon: "⏰",
@@ -121,7 +121,7 @@ export default function Contact() {
                   {
                     icon: "📞",
                     label: "Phone",
-                    value: "+92 300 123 4567",
+                    value: "+91 85548 79079",
                   },
                 ].map((item) => (
                   <div key={item.label} className="flex items-start gap-4">

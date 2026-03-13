@@ -38,9 +38,10 @@ export default function Products() {
                 <div className="flex items-center justify-between mt-auto">
                   <span className="text-2xl font-black text-[#2D6A4F]">{product.price}</span>
                   <a
-                    href="#"
+                    href={product.shopifyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="px-5 py-2.5 bg-[#2D6A4F] text-white font-bold text-sm rounded-xl hover:bg-[#40916C] transition-colors duration-200 shadow-sm"
-                    onClick={(e) => e.preventDefault()}
                   >
                     Buy Now →
                   </a>
@@ -53,10 +54,11 @@ export default function Products() {
         {/* CTA Banner */}
         <div className="mt-16 bg-gradient-to-r from-[#2D6A4F] to-[#40916C] rounded-3xl p-10 text-center text-white shadow-xl">
           <h3 className="text-3xl font-black mb-3">View Our Full Catalog</h3>
-          <p className="text-[#B7E4C7] mb-8 text-lg">500+ agriculture products ready for delivery across Pakistan</p>
+          <p className="text-[#B7E4C7] mb-8 text-lg">500+ agriculture products ready for delivery across India</p>
           <a
-            href="#"
-            onClick={(e) => e.preventDefault()}
+            href="https://48cdqc-i6.myshopify.com/collections/all"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-block px-10 py-4 bg-[#74C69D] text-[#1B4332] font-black text-lg rounded-2xl hover:bg-white transition-colors duration-200"
           >
             🛒 Shop All Products
