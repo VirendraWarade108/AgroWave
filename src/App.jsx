@@ -15,7 +15,7 @@ function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#40916C] to-[#74C69D] flex items-center justify-center text-xl shadow-md">
-                🌱
+                <img src="https://drive.google.com/file/d/1QUybR0mrhd1J03QKjgcJ1yXVwUJbJYf6/view?usp=sharing" alt="logo" />
               </div>
               <span className="text-2xl font-black">
                 <span className="text-[#74C69D]">Agro</span>Smart
