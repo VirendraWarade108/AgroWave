@@ -1,2 +1,4 @@
 package.json
 .qodo
+node_modules
+package-lock.json
