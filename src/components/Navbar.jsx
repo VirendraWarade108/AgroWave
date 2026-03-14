@@ -21,47 +21,56 @@ export default function Navbar() {
 
   const handleNav = (href) => {
     setMenuOpen(false);
-    const el = document.querySelector(href);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    const id = href.replace("#", "");
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      scrolled ? "bg-[#1a3c2e] shadow-xl" : "bg-[#1a3c2e]"
-    }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"/>
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => handleNav("#home")}>
-            <img
-              src="https://res.cloudinary.com/do1q7vrjj/image/upload/v1773466303/agrowave_logo3_clean_nobg_di2csk.png"
-              alt="AgroWave Logo"
-              className="h-10 w-auto object-contain"
-            />
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-[#1a3c2e] shadow-xl" : "bg-[#1a3c2e]"}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center h-16 gap-4">
 
-          <div className="hidden md:flex items-center gap-1">
+          {/* Logo */}
+          <div className="flex items-center cursor-pointer shrink-0" onClick={() => handleNav("#home")}>
+            <img src="https://res.cloudinary.com/do1q7vrjj/image/upload/v1773466303/agrowave_logo3_clean_nobg_di2csk.png"
+              alt="AgroWave Logo" className="h-10 w-auto object-contain" width="120" height="40" />
+          </div>
+
+          {/* Desktop Links — centered */}
+          <div className="hidden md:flex items-center gap-1 flex-1 justify-center">
             {navLinks.map((link) => (
               <button key={link.href} onClick={() => handleNav(link.href)}
-                className="px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200">
+                className="px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200 whitespace-nowrap">
                 {link.label}
               </button>
             ))}
-            <a href="https://48cdqc-i6.myshopify.com" target="_blank" rel="noopener noreferrer"
-              className="ml-3 px-5 py-2 bg-[#4CAF50] text-white text-sm font-bold rounded-full hover:bg-[#43a047] transition-all duration-200 shadow-md">
-              🛒 Shop Now
+          </div>
+
+          {/* Shop Now */}
+          <div className="hidden md:flex items-center shrink-0">
+            <a href="https://48cdqc-i6.myshopify.com/collections/all" target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 px-5 py-2 bg-[#4CAF50] text-white text-sm font-bold rounded-full hover:bg-[#43a047] transition-all duration-200 shadow-md whitespace-nowrap">
+              <img src="https://cdn-icons-png.flaticon.com/128/17787/17787183.png" alt="shop" width="16" height="16" className="invert" />
+              Shop Now
             </a>
           </div>
 
-          <button className="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
-            onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
-            <div className="w-5 h-5 flex flex-col justify-center gap-1.5">
-              <span className={`block h-0.5 bg-white transition-all duration-300 ${menuOpen ? "rotate-45 translate-y-2" : ""}`} />
-              <span className={`block h-0.5 bg-white transition-all duration-300 ${menuOpen ? "opacity-0" : ""}`} />
-              <span className={`block h-0.5 bg-white transition-all duration-300 ${menuOpen ? "-rotate-45 -translate-y-2" : ""}`} />
-            </div>
-          </button>
+          {/* Mobile Hamburger */}
+          <div className="md:hidden ml-auto">
+            <button className="p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
+              onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+              <div className="w-5 h-5 flex flex-col justify-center gap-1.5">
+                <span className={`block h-0.5 bg-white transition-all duration-300 ${menuOpen ? "rotate-45 translate-y-2" : ""}`} />
+                <span className={`block h-0.5 bg-white transition-all duration-300 ${menuOpen ? "opacity-0" : ""}`} />
+                <span className={`block h-0.5 bg-white transition-all duration-300 ${menuOpen ? "-rotate-45 -translate-y-2" : ""}`} />
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Mobile Menu */}
       <div className={`md:hidden overflow-hidden transition-all duration-300 ${menuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}>
         <div className="bg-[#152e23] border-t border-white/10 px-4 py-3 flex flex-col gap-1">
           {navLinks.map((link) => (
@@ -70,9 +79,10 @@ export default function Navbar() {
               {link.label}
             </button>
           ))}
-          <a href="https://48cdqc-i6.myshopify.com" target="_blank" rel="noopener noreferrer"
-            className="mt-2 px-4 py-3 bg-[#4CAF50] text-white text-sm font-bold rounded-xl text-center">
-            🛒 Shop Now
+          <a href="https://48cdqc-i6.myshopify.com/collections/all" target="_blank" rel="noopener noreferrer"
+            className="mt-2 flex items-center justify-center gap-2 px-4 py-3 bg-[#4CAF50] text-white text-sm font-bold rounded-xl">
+            <img src="https://cdn-icons-png.flaticon.com/128/17787/17787183.png" alt="shop" width="16" height="16" className="invert" />
+            Shop Now
           </a>
         </div>
       </div>

@@ -13,12 +13,12 @@ const categories = [
 
 // Product images — real Shopify product image style placeholders
 const productImages = {
-  1: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=400&q=80",
-  2: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&q=80",
-  3: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=400&q=80",
-  4: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&q=80",
-  5: "https://images.unsplash.com/photo-1592419044706-39796d40f98c?w=400&q=80",
-  6: "https://images.unsplash.com/photo-1559181567-c3190ca9d5db?w=400&q=80",
+  1: "https://cdn.shopify.com/s/files/1/0815/9281/1768/files/160066896120200921_40x40@3x.jpg?v=1773391647",
+  2: "https://cdn.shopify.com/s/files/1/0815/9281/1768/files/acrobat_0_40x40@3x.png?v=1773395254",
+  3: "https://cdn.shopify.com/s/files/1/0815/9281/1768/files/Barazide_650x550_1fc78b18-2583-41c4-a312-23866dbe3ffc_40x40@3x.webp?v=1773392149",
+  4: "https://cdn.shopify.com/s/files/1/0815/9281/1768/files/160042173520200918_4d259e1b-91ae-41f3-89e5-210a175ab0af_40x40@3x.jpg?v=1773383961",
+  5: "https://cdn.shopify.com/s/files/1/0815/9281/1768/files/160042640220200918_40x40@3x.jpg?v=1773384185",
+  6: "https://cdn.shopify.com/s/files/1/0815/9281/1768/files/shopping_1e01a9a9-6741-4828-8c80-b24a1bc07c17_40x40@3x.webp?v=1773378904",
 };
 
 export default function Products() {
@@ -60,14 +60,14 @@ export default function Products() {
               className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl border border-gray-100 transition-all duration-300 hover:-translate-y-1 flex flex-col"
             >
               {/* Product Image — white background like Shopify store */}
-              <div className="relative bg-white h-52 flex items-center justify-center p-4 border-b border-gray-50">
+              <div className="relative bg-white h-52 flex items-center justify-center p-6 border-b border-gray-50">
                 <img
                   src={productImages[product.id]}
                   alt={product.name}
-                  className="h-44 w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                  className="h-40 w-40 object-contain group-hover:scale-110 transition-transform duration-300 drop-shadow-md"
                   loading="lazy"
-                  width="300"
-                  height="176"
+                  width="160"
+                  height="160"
                 />
                 {/* Badge — top left like AgroWave store */}
                 <span className={`absolute top-3 left-3 ${product.badgeColor} text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow`}>

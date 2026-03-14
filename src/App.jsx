@@ -24,10 +24,15 @@ function Footer() {
               India's trusted agriculture companion. Rooted in science, built for farmers. Empowering 12,000+ farms since 2009.
             </p>
             <div className="flex gap-3">
-              {["📘", "📸", "▶️", "🐦"].map((icon, i) => (
+              {[
+                { icon: "https://cdn-icons-png.flaticon.com/128/5968/5968764.png", label: "Facebook" },
+                { icon: "https://cdn-icons-png.flaticon.com/128/2111/2111463.png", label: "Instagram" },
+                { icon: "https://cdn-icons-png.flaticon.com/128/1384/1384060.png", label: "YouTube" },
+                { icon: "https://cdn-icons-png.flaticon.com/128/3670/3670151.png", label: "Twitter" },
+              ].map((social, i) => (
                 <a key={i} href="#" onClick={(e) => e.preventDefault()}
-                  className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#4CAF50] transition-colors duration-200 text-sm">
-                  {icon}
+                  className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#4CAF50] transition-colors duration-200">
+                  <img src={social.icon} alt={social.label} width="18" height="18" className="invert opacity-80" />
                 </a>
               ))}
             </div>
@@ -42,7 +47,7 @@ function Footer() {
                   <a href={`#${l.toLowerCase().replace(" ", "")}`}
                     onClick={(e) => {
                       e.preventDefault();
-                      document.querySelector(`#${l.toLowerCase().replace(" ", "")}`)?.scrollIntoView({ behavior: "smooth" });
+                      document.getElementById(l.toLowerCase().replace(" ", ""))?.scrollIntoView({ behavior: "smooth" });
                     }}
                     className="text-gray-400 hover:text-[#4CAF50] transition-colors text-sm">
                     → {l}
@@ -59,7 +64,7 @@ function Footer() {
               {[
                 { label: "All Products", href: "/collections/all" },
                 { label: "Seeds", href: "/collections/seeds" },
-                { label: "Fertilizers", href: "/collections/all?filter.v.price.gte=&filter.v.price.lte=&filter.p.product_type=Fungicide&sort_by=title-ascending" },
+                { label: "Fertilizers", href: "/collections/fertilizers" },
                 { label: "Pesticides", href: "/collections/pesticides" },
                 { label: "Micronutrients", href: "/collections/micronutrients" },
                 { label: "Herbicides", href: "/collections/herbicides" },

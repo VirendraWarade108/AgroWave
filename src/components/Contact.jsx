@@ -1,136 +1,113 @@
 import { useState } from "react";
 
+const WHATSAPP_NUMBER = "918554879079";
+
+const ICONS = {
+  phone:    "https://cdn-icons-png.flaticon.com/128/6470/6470993.png",
+  location: "https://cdn-icons-png.flaticon.com/128/11785/11785250.png",
+  email:    "https://cdn-icons-png.flaticon.com/128/7286/7286142.png",
+  clock:    "https://cdn-icons-png.flaticon.com/128/2972/2972554.png",
+  call:     "https://cdn-icons-png.flaticon.com/128/950/950237.png",
+  shop:     "https://cdn-icons-png.flaticon.com/128/17787/17787183.png",
+};
+
 export default function Contact() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) return;
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
+    const text = `Hello AgroWave! 🌿\n\n*New Inquiry from Website*\n\n👤 Name: ${form.name}\n📧 Email: ${form.email}\n\n💬 Message:\n${form.message}\n\n---\nSent from AgroWave Farming Tools App`;
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`, "_blank");
     setForm({ name: "", email: "", message: "" });
   };
 
   return (
-    <section id="contact" className="py-20 bg-white px-4 sm:px-6 lg:px-8">
+    <section id="contact" className="py-20 bg-gray-50 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-14">
-          <span className="inline-block text-[#40916C] font-semibold text-sm uppercase tracking-widest mb-3">Get In Touch</span>
-          <h2 className="text-4xl font-black text-gray-900 mb-4">
-            Contact <span className="text-[#2D6A4F]">Us</span>
-          </h2>
-          <p className="text-gray-500 text-lg max-w-xl mx-auto">
-            Questions about products, bulk orders, or farming advice? We're here to help.
-          </p>
+          <span className="inline-block text-[#4CAF50] font-semibold text-sm uppercase tracking-widest mb-3">Get In Touch</span>
+          <h2 className="text-4xl font-black text-gray-900 mb-4">Contact <span className="text-[#1a3c2e]">Us</span></h2>
+          <p className="text-gray-500 text-lg max-w-xl mx-auto">Questions about products, bulk orders, or farming advice? We're here to help.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
-          {/* Contact Form */}
-          <div className="bg-gradient-to-br from-[#F0FFF4] to-white border border-[#74C69D]/30 rounded-3xl p-8 shadow-lg">
-            <h3 className="text-xl font-black text-gray-900 mb-6">Send Us a Message</h3>
-
-            {submitted && (
-              <div className="mb-4 p-4 bg-green-100 border border-green-300 rounded-xl text-green-800 font-semibold text-sm">
-                ✅ Message sent! We'll get back to you within 24 hours.
-              </div>
-            )}
-
+          {/* Form */}
+          <div className="bg-white border border-gray-100 rounded-3xl p-8 shadow-sm">
+            <h3 className="text-xl font-black text-gray-900 mb-2">Send Us a Message</h3>
+            <p className="text-gray-400 text-sm mb-6">Fill the form — it will open WhatsApp with your message pre-filled. Just hit Send!</p>
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Your Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Muhammad Ali"
-                  value={form.name}
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Your Name *</label>
+                <input type="text" required placeholder="Rahul Sharma" value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#40916C] focus:outline-none text-gray-800 bg-white transition-colors"
-                />
+                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#4CAF50] focus:outline-none text-gray-800 bg-white transition-colors" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="farmer@email.com"
-                  value={form.email}
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address *</label>
+                <input type="email" required placeholder="farmer@email.com" value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#40916C] focus:outline-none text-gray-800 bg-white transition-colors"
-                />
+                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#4CAF50] focus:outline-none text-gray-800 bg-white transition-colors" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Message</label>
-                <textarea
-                  required
-                  rows={4}
-                  placeholder="Tell us about your farming needs or bulk order..."
-                  value={form.message}
-                  onChange={(e) => setForm({ ...form, message: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#40916C] focus:outline-none text-gray-800 bg-white transition-colors resize-none"
-                />
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Message *</label>
+                <textarea required rows={4} placeholder="Tell us about your crop, pest problem, or bulk order..."
+                  value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#4CAF50] focus:outline-none text-gray-800 bg-white transition-colors resize-none" />
               </div>
-              <button
-                type="submit"
-                className="py-4 bg-gradient-to-r from-[#2D6A4F] to-[#40916C] text-white font-bold text-base rounded-2xl hover:from-[#40916C] hover:to-[#74C69D] transition-all duration-300 shadow-md"
-              >
-                📨 Send Message
+              <button type="submit"
+                className="py-4 bg-[#25D366] text-white font-bold text-base rounded-2xl hover:bg-[#20b858] transition-all duration-300 shadow-md flex items-center justify-center gap-2">
+                <img src={ICONS.phone} alt="whatsapp" width="22" height="22" className="invert" />
+                Send via WhatsApp
               </button>
+              <p className="text-center text-xs text-gray-400">Clicking will open WhatsApp with your message ready to send</p>
             </form>
           </div>
 
-          {/* Contact Info */}
-          <div className="flex flex-col gap-6">
+          {/* Info */}
+          <div className="flex flex-col gap-5">
             {/* WhatsApp CTA */}
-            <a
-              href="https://wa.me/918554879079"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-5 bg-[#25D366] rounded-3xl p-7 text-white shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group"
-            >
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
-                📱
+            <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-5 bg-[#25D366] rounded-3xl p-7 text-white shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group">
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                <img src={ICONS.phone} alt="whatsapp" width="36" height="36" className="invert" />
               </div>
               <div>
                 <div className="font-black text-xl">Chat on WhatsApp</div>
-                <div className="text-green-100 text-sm mt-0.5">Instant reply for bulk orders</div>
+                <div className="text-green-100 text-sm mt-0.5">Instant reply for bulk orders & queries</div>
                 <div className="font-bold text-lg mt-1">+91 85548 79079</div>
               </div>
             </a>
 
-            {/* Address & Email */}
-            <div className="bg-gray-50 rounded-3xl p-7 border border-gray-100">
-              <h3 className="text-xl font-black text-gray-900 mb-6">Our Details</h3>
-              <div className="flex flex-col gap-5">
+            {/* Store link */}
+            <a href="https://48cdqc-i6.myshopify.com/collections/all" target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-5 bg-[#1a3c2e] rounded-3xl p-6 text-white hover:bg-[#4CAF50] transition-all duration-300 group">
+              <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
+                <img src={ICONS.shop} alt="store" width="30" height="30" className="invert" />
+              </div>
+              <div>
+                <div className="font-black text-lg">Visit Our Store</div>
+                <div className="text-gray-300 text-sm mt-0.5 group-hover:text-white">Browse all products on AgroWave</div>
+              </div>
+            </a>
+
+            {/* Details */}
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+              <h3 className="text-lg font-black text-gray-900 mb-5">Our Details</h3>
+              <div className="flex flex-col gap-4">
                 {[
-                  {
-                    icon: "📍",
-                    label: "Address",
-                    value: "India",
-                  },
-                  {
-                    icon: "📧",
-                    label: "Email",
-                    value: "info@agrowave.in",
-                  },
-                  {
-                    icon: "⏰",
-                    label: "Hours",
-                    value: "Monday – Saturday, 8:00 AM – 7:00 PM",
-                  },
-                  {
-                    icon: "📞",
-                    label: "Phone",
-                    value: "+91 85548 79079",
-                  },
+                  { icon: ICONS.location, label: "Address", value: "India" },
+                  { icon: ICONS.email,    label: "Email",   value: "info@agrowave.in" },
+                  { icon: ICONS.clock,    label: "Hours",   value: "Mon – Sat, 8:00 AM – 7:00 PM" },
+                  { icon: ICONS.call,     label: "Phone",   value: "+91 85548 79079" },
                 ].map((item) => (
-                  <div key={item.label} className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-[#74C69D]/20 rounded-xl flex items-center justify-center text-xl shrink-0">
-                      {item.icon}
+                  <div key={item.label} className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-[#4CAF50]/10 rounded-xl flex items-center justify-center shrink-0">
+                      <img src={item.icon} alt={item.label} width="20" height="20" />
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{item.label}</p>
-                      <p className="text-gray-800 font-medium">{item.value}</p>
+                      <p className="text-gray-800 font-medium text-sm">{item.value}</p>
                     </div>
                   </div>
                 ))}
