@@ -96,7 +96,7 @@ function Footer() {
         </div>
 
         <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-gray-500 text-sm">© 2025 AgroWave. All rights reserved.</p>
+          <p className="text-gray-500 text-sm">© 2026 AgroWave. All rights reserved.</p>
           <p className="text-[#4CAF50] text-sm font-semibold italic">"Empowering Farmers with Smart Tools" 🌾</p>
         </div>
       </div>
