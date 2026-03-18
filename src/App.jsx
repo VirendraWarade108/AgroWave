@@ -84,7 +84,7 @@ function Footer() {
             <h4 className="font-black text-[#4CAF50] mb-4 uppercase tracking-wide text-sm">Contact</h4>
             <div className="flex flex-col gap-3 text-sm text-gray-400">
               <p>📍 India</p>
-              <p>📧 info@agrowave.in</p>
+              <p>📧 virendrawarade873@agrowave.in</p>
               <p>📞 +91 85548 79079</p>
               <p>⏰ Mon–Sat: 8AM – 7PM</p>
               <a href="https://wa.me/918554879079" target="_blank" rel="noopener noreferrer"
