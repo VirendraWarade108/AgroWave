@@ -64,9 +64,12 @@ const SEVERITY_STYLES = {
   None:     "bg-emerald-50 text-emerald-800 border border-emerald-200",
 };
 
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+
 export default function CropDiseaseDetector() {
   const [image, setImage] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
+  const [imageMimeType, setImageMimeType] = useState("image/jpeg");
   const [symptoms, setSymptoms] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -87,6 +90,7 @@ export default function CropDiseaseDetector() {
     setResult(null);
     const url = URL.createObjectURL(file);
     setImage(url);
+    setImageMimeType(file.type || "image/jpeg");
     const reader = new FileReader();
     reader.onload = (e) => {
       const base64 = e.target.result.split(",")[1];
@@ -110,50 +114,65 @@ export default function CropDiseaseDetector() {
     setLoading(true);
     setResult(null);
 
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      setError("Gemini API key not found. Add VITE_GEMINI_API_KEY to your .env file.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const messages = [];
+      // Build parts array for Gemini
+      const parts = [];
+
+      // Add system instruction as first text part
+      parts.push({ text: SYSTEM_PROMPT });
+
+      // Add image if provided
       if (imageBase64) {
-        messages.push({
-          role: "user",
-          content: [
-            { type: "image", source: { type: "base64", media_type: "image/jpeg", data: imageBase64 } },
-            {
-              type: "text",
-              text: symptoms.trim()
-                ? `Analyze this crop leaf image for diseases. The farmer also reports: "${symptoms}". Return JSON.`
-                : "Analyze this crop leaf image for diseases and return JSON.",
-            },
-          ],
-        });
-      } else {
-        messages.push({
-          role: "user",
-          content: `Farmer reports these crop symptoms: "${symptoms}". Identify the likely disease and return JSON.`,
+        parts.push({
+          inline_data: {
+            mime_type: imageMimeType,
+            data: imageBase64,
+          },
         });
       }
 
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      // Add user prompt text
+      const userText = imageBase64
+        ? symptoms.trim()
+          ? `Analyze this crop leaf image for diseases. The farmer also reports: "${symptoms}". Return JSON only.`
+          : "Analyze this crop leaf image for diseases and return JSON only."
+        : `Farmer reports these crop symptoms: "${symptoms}". Identify the likely disease and return JSON only.`;
+
+      parts.push({ text: userText });
+
+      const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages,
+          contents: [{ role: "user", parts }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 1024,
+            responseMimeType: "application/json",
+          },
         }),
       });
 
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData?.error?.message || `API error ${response.status}`);
+      }
+
       const data = await response.json();
-      const text = data.content?.find((b) => b.type === "text")?.text || "";
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
       const clean = text.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       setResult(parsed);
     } catch (err) {
       console.error(err);
-      setError("Analysis failed. Please try again or describe symptoms in text.");
+      setError(`Analysis failed: ${err.message || "Please try again or describe symptoms in text."}`);
     } finally {
       setLoading(false);
     }
@@ -163,7 +182,6 @@ export default function CropDiseaseDetector() {
 
   return (
     <section id="disease-detector" className="py-24 bg-[#fafaf8] px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Subtle background texture */}
       <div className="absolute inset-0 opacity-30"
         style={{ backgroundImage: "radial-gradient(circle at 20% 50%, #dcfce7 0%, transparent 50%), radial-gradient(circle at 80% 20%, #d1fae5 0%, transparent 40%)" }} />
 
@@ -275,7 +293,7 @@ export default function CropDiseaseDetector() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
-                      Analyzing with AI...
+                      Analyzing with Gemini AI...
                     </>
                   ) : (
                     <>🔬 Detect Disease & Get Treatment</>
@@ -326,7 +344,7 @@ export default function CropDiseaseDetector() {
                     </div>
                     <div className="text-center">
                       <p className="font-black text-gray-800 text-lg">Analyzing...</p>
-                      <p className="text-gray-400 text-sm mt-1">Claude AI Vision is examining your crop</p>
+                      <p className="text-gray-400 text-sm mt-1">Gemini AI Vision is examining your crop</p>
                     </div>
                     <div className="flex gap-1.5">
                       {[0, 1, 2].map((i) => (
