@@ -3,6 +3,8 @@ import Hero from "./components/Hero";
 import Calculator from "./components/Calculator";
 import CropCalendar from "./components/CropCalendar";
 import Weather from "./components/Weather";
+import CropDiseaseDetector from "./components/CropDiseaseDetector";
+import YieldPredictor from "./components/YieldPredictor";
 import Products from "./components/Products";
 import Contact from "./components/Contact";
 
@@ -11,14 +13,10 @@ function Footer() {
     <footer className="bg-[#0d2318] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
-          {/* Brand */}
           <div className="md:col-span-1">
             <div className="mb-4">
-              <img
-                src="https://res.cloudinary.com/do1q7vrjj/image/upload/v1773466303/agrowave_logo3_clean_nobg_di2csk.png"
-                alt="AgroWave Logo"
-                className="h-12 w-auto object-contain"
-              />
+              <img src="https://res.cloudinary.com/do1q7vrjj/image/upload/v1773466303/agrowave_logo3_clean_nobg_di2csk.png"
+                alt="AgroWave Logo" className="h-12 w-auto object-contain" />
             </div>
             <p className="text-gray-400 leading-relaxed text-sm mb-4">
               India's trusted agriculture companion. Rooted in science, built for farmers. Empowering 12,000+ farms since 2009.
@@ -38,36 +36,43 @@ function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
           <div>
             <h4 className="font-black text-[#4CAF50] mb-4 uppercase tracking-wide text-sm">Quick Links</h4>
             <ul className="flex flex-col gap-2">
-              {["Home", "Calculator", "Crop Calendar", "Weather", "Products", "Contact"].map((l) => (
-                <li key={l}>
-                  <a href={`#${l.toLowerCase().replace(" ", "")}`}
+              {[
+                { label: "Home", id: "home" },
+                { label: "Calculator", id: "calculator" },
+                { label: "Disease Detector", id: "disease-detector" },
+                { label: "Yield Predictor", id: "yield-predictor" },
+                { label: "Crop Calendar", id: "calendar" },
+                { label: "Weather", id: "weather" },
+                { label: "Products", id: "products" },
+                { label: "Contact", id: "contact" },
+              ].map((l) => (
+                <li key={l.id}>
+                  <a href={`#${l.id}`}
                     onClick={(e) => {
                       e.preventDefault();
-                      document.getElementById(l.toLowerCase().replace(" ", ""))?.scrollIntoView({ behavior: "smooth" });
+                      document.getElementById(l.id)?.scrollIntoView({ behavior: "smooth" });
                     }}
                     className="text-gray-400 hover:text-[#4CAF50] transition-colors text-sm">
-                    → {l}
+                    → {l.label}
                   </a>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Store Links */}
           <div>
             <h4 className="font-black text-[#4CAF50] mb-4 uppercase tracking-wide text-sm">Our Store</h4>
             <ul className="flex flex-col gap-2">
               {[
                 { label: "All Products", href: "/collections/all" },
+                { label: "Fungicides", href: "/collections/all?filter.p.product_type=Fungicide" },
+                { label: "Insecticides", href: "/collections/all?filter.p.product_type=Insecticide" },
+                { label: "Herbicides", href: "/collections/all?filter.p.product_type=Herbicide" },
                 { label: "Seeds", href: "/collections/seeds" },
                 { label: "Fertilizers", href: "/collections/fertilizers" },
-                { label: "Pesticides", href: "/collections/pesticides" },
-                { label: "Micronutrients", href: "/collections/micronutrients" },
-                { label: "Herbicides", href: "/collections/herbicides" },
               ].map((l) => (
                 <li key={l.label}>
                   <a href={`https://48cdqc-i6.myshopify.com${l.href}`} target="_blank" rel="noopener noreferrer"
@@ -79,7 +84,6 @@ function Footer() {
             </ul>
           </div>
 
-          {/* Contact Info */}
           <div>
             <h4 className="font-black text-[#4CAF50] mb-4 uppercase tracking-wide text-sm">Contact</h4>
             <div className="flex flex-col gap-3 text-sm text-gray-400">
@@ -111,6 +115,8 @@ export default function App() {
       <main>
         <Hero />
         <Calculator />
+        <CropDiseaseDetector />
+        <YieldPredictor />
         <CropCalendar />
         <Weather />
         <Products />
