@@ -102,7 +102,7 @@ const SEVERITY_STYLES = {
   None:     "bg-emerald-50 text-emerald-800 border border-emerald-200",
 };
 
-async function callGeminiAPI(imageBase64, imageMimeType, symptoms) {
+async function callAPI(imageBase64, imageMimeType, symptoms) {
   const parts = [];
 
   if (imageBase64) {
