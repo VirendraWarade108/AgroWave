@@ -1,5 +1,8 @@
 import { useState, useRef } from "react";
 
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
 const SHOPIFY_URLS = {
   fungicide: "https://48cdqc-i6.myshopify.com/collections/all?filter.p.product_type=Fungicide&sort_by=title-ascending",
   insecticide: "https://48cdqc-i6.myshopify.com/collections/all?filter.p.product_type=Insecticide&sort_by=title-ascending",
@@ -64,17 +67,35 @@ const SEVERITY_STYLES = {
   None:     "bg-emerald-50 text-emerald-800 border border-emerald-200",
 };
 
-async function callClaudeAPI(messages, systemPrompt) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+async function callGeminiAPI(imageBase64, imageMimeType, symptoms) {
+  const parts = [];
+
+  if (imageBase64) {
+    parts.push({
+      inline_data: {
+        mime_type: imageMimeType,
+        data: imageBase64,
+      },
+    });
+  }
+
+  const userText = imageBase64
+    ? symptoms.trim()
+      ? `${SYSTEM_PROMPT}\n\nAnalyze this crop leaf image for diseases. The farmer also reports: "${symptoms}". Return JSON only.`
+      : `${SYSTEM_PROMPT}\n\nAnalyze this crop leaf image for diseases and return JSON only.`
+    : `${SYSTEM_PROMPT}\n\nFarmer reports these crop symptoms: "${symptoms}". Identify the likely disease and return JSON only.`;
+
+  parts.push({ text: userText });
+
+  const response = await fetch(GEMINI_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      system: systemPrompt,
-      messages,
+      contents: [{ parts }],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 1024,
+      },
     }),
   });
 
@@ -84,7 +105,7 @@ async function callClaudeAPI(messages, systemPrompt) {
   }
 
   const data = await response.json();
-  const text = data.content?.map((b) => b.text || "").join("") || "";
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
   const clean = text.replace(/```json|```/g, "").trim();
   return JSON.parse(clean);
 }
@@ -138,31 +159,7 @@ export default function CropDiseaseDetector() {
     setResult(null);
 
     try {
-      let userContent = [];
-
-      if (imageBase64) {
-        userContent.push({
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: imageMimeType,
-            data: imageBase64,
-          },
-        });
-      }
-
-      const userText = imageBase64
-        ? symptoms.trim()
-          ? `Analyze this crop leaf image for diseases. The farmer also reports: "${symptoms}". Return JSON only.`
-          : "Analyze this crop leaf image for diseases and return JSON only."
-        : `Farmer reports these crop symptoms: "${symptoms}". Identify the likely disease and return JSON only.`;
-
-      userContent.push({ type: "text", text: userText });
-
-      const parsed = await callClaudeAPI(
-        [{ role: "user", content: userContent }],
-        SYSTEM_PROMPT
-      );
+      const parsed = await callGeminiAPI(imageBase64, imageMimeType, symptoms);
       setResult(parsed);
     } catch (err) {
       console.error(err);
@@ -287,7 +284,7 @@ export default function CropDiseaseDetector() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
-                      Analyzing with Claude AI...
+                      Analyzing with Gemini AI...
                     </>
                   ) : (
                     <>🔬 Detect Disease & Get Treatment</>
@@ -338,7 +335,7 @@ export default function CropDiseaseDetector() {
                     </div>
                     <div className="text-center">
                       <p className="font-black text-gray-800 text-lg">Analyzing...</p>
-                      <p className="text-gray-400 text-sm mt-1">Claude AI is examining your crop</p>
+                      <p className="text-gray-400 text-sm mt-1">Gemini AI is examining your crop</p>
                     </div>
                     <div className="flex gap-1.5">
                       {[0, 1, 2].map((i) => (
