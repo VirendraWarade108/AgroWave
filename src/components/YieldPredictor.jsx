@@ -1,30 +1,14 @@
-const OPENROUTER_API_KEY = "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"; // paste your key
-const API_URL = "https://openrouter.ai/api/v1/chat/completions";
+import { useState } from "react";
 
-async function callAPI(userPrompt) {
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "meta-llama/llama-3.3-70b-instruct:free",
-      max_tokens: 1024,
-      messages: [{ role: "user", content: `${SYSTEM_PROMPT}\n\n${userPrompt}` }],
-    }),
-  });
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err?.error?.message || `API error ${response.status}`);
-  }
-
-  const data = await response.json();
-  const text = data.choices?.[0]?.message?.content || "";
-  const clean = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(clean);
-}
+const SHOPIFY_URLS = {
+  fungicide: "https://48cdqc-i6.myshopify.com/collections/all?filter.p.product_type=Fungicide&sort_by=title-ascending",
+  insecticide: "https://48cdqc-i6.myshopify.com/collections/all?filter.p.product_type=Insecticide&sort_by=title-ascending",
+  herbicide: "https://48cdqc-i6.myshopify.com/collections/all?filter.p.product_type=Herbicide&sort_by=title-ascending",
+  all: "https://48cdqc-i6.myshopify.com/collections/all?sort_by=title-ascending",
+};
 
 const PRODUCT_MAP = {
   "Acrobat Fungicide": { url: SHOPIFY_URLS.fungicide, price: "₹999" },
@@ -125,7 +109,7 @@ const InputField = ({ label, value, onChange, placeholder, type = "text" }) => (
   </div>
 );
 
-async function callAPI(userPrompt) {
+async function callGeminiAPI(userPrompt) {
   const response = await fetch(GEMINI_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -190,7 +174,7 @@ export default function YieldPredictor() {
 Return JSON analysis with yield prediction, limiting factors, and AgroWave product recommendations.`;
 
     try {
-      const parsed = await callAPI(userPrompt);
+      const parsed = await callGeminiAPI(userPrompt);
       setResult(parsed);
     } catch (err) {
       console.error(err);
