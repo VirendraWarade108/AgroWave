@@ -125,7 +125,7 @@ const InputField = ({ label, value, onChange, placeholder, type = "text" }) => (
   </div>
 );
 
-async function callGeminiAPI(userPrompt) {
+async function callAPI(userPrompt) {
   const response = await fetch(GEMINI_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -190,7 +190,7 @@ export default function YieldPredictor() {
 Return JSON analysis with yield prediction, limiting factors, and AgroWave product recommendations.`;
 
     try {
-      const parsed = await callGeminiAPI(userPrompt);
+      const parsed = await callAPI(userPrompt);
       setResult(parsed);
     } catch (err) {
       console.error(err);
