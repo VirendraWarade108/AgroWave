@@ -1,26 +1,7 @@
-const OPENROUTER_API_KEY = "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"; // paste your key
+const OPENROUTER_API_KEY = "your_openrouter_key_here"; // paste your key
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-async function callAPI(imageBase64, imageMimeType, symptoms) {
-  const messages = [];
-  const content = [];
-
-  if (imageBase64) {
-    content.push({
-      type: "image_url",
-      image_url: { url: `data:${imageMimeType};base64,${imageBase64}` },
-    });
-  }
-
-  const textPrompt = imageBase64
-    ? symptoms.trim()
-      ? `Analyze this crop leaf image. Farmer reports: "${symptoms}". ${SYSTEM_PROMPT}`
-      : `Analyze this crop leaf image. ${SYSTEM_PROMPT}`
-    : `Farmer reports: "${symptoms}". ${SYSTEM_PROMPT}`;
-
-  content.push({ type: "text", text: textPrompt });
-  messages.push({ role: "user", content });
-
+async function callAPI(userPrompt) {
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -28,9 +9,9 @@ async function callAPI(imageBase64, imageMimeType, symptoms) {
       "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "meta-llama/llama-3.2-11b-vision-instruct:free",
+      model: "meta-llama/llama-3.3-70b-instruct:free",
       max_tokens: 1024,
-      messages,
+      messages: [{ role: "user", content: `${SYSTEM_PROMPT}\n\n${userPrompt}` }],
     }),
   });
 
@@ -54,79 +35,104 @@ const PRODUCT_MAP = {
   "Barazide Herbicide": { url: SHOPIFY_URLS.herbicide, price: "₹900" },
 };
 
-const SYSTEM_PROMPT = `You are an expert agronomist and crop disease specialist for AgroWave, India's trusted agriculture store. Analyze the provided crop leaf image or symptom description and return ONLY a valid JSON object (no markdown, no backticks, no preamble).
+const crops = ["Wheat", "Rice", "Cotton", "Sugarcane", "Corn", "Vegetables", "Tomatoes", "Soybean", "Groundnut"];
+const soils = ["Sandy", "Clay", "Loamy", "Black (Cotton Soil)", "Red Laterite"];
+const irrigationOptions = ["Rainfed only", "Drip irrigation", "Flood irrigation", "Sprinkler", "Canal water"];
+const fertilizerOptions = ["None", "Basic urea only", "NPK balanced", "Organic compost", "Mixed chemical + organic"];
+const seasons = ["Kharif (Jun–Oct)", "Rabi (Nov–Mar)", "Zaid (Mar–Jun)"];
 
-Your JSON must follow this exact schema:
+const SYSTEM_PROMPT = `You are an expert agricultural yield prediction specialist for AgroWave, India's trusted agriculture store. 
+Based on the farmer's inputs, predict crop yield and recommend AgroWave products to improve it.
+Return ONLY a valid JSON object (no markdown, no backticks, no preamble).
+
+JSON schema:
 {
-  "disease": "Disease name or 'No disease detected'",
-  "confidence": "High / Medium / Low",
-  "severity": "Mild / Moderate / Severe / None",
-  "description": "2-sentence explanation of the disease and how it affects the crop",
-  "cause": "Fungal / Bacterial / Viral / Pest / Nutrient Deficiency / Unknown",
-  "treatment_steps": ["step 1", "step 2", "step 3"],
+  "current_yield_qtl_per_acre": 12.5,
+  "optimized_yield_qtl_per_acre": 18.0,
+  "yield_gap_percent": 44,
+  "yield_grade": "Below Average / Average / Good / Excellent",
+  "limiting_factors": [
+    { "factor": "Factor name", "impact": "High / Medium / Low", "description": "One sentence explanation" }
+  ],
+  "optimization_actions": [
+    { "action": "Specific action", "expected_gain_qtl": 2.5 }
+  ],
   "recommended_products": [
     {
-      "name": "Product name from AgroWave (choose from: Acrobat Fungicide, Bavistin Fungicide, Blu Copper Fungicide, Abacin Insecticide, Proclaim Insecticide, Barazide Herbicide)",
-      "reason": "One sentence why this product helps"
+      "name": "Product name (choose from: Acrobat Fungicide, Bavistin Fungicide, Blu Copper Fungicide, Abacin Insecticide, Proclaim Insecticide, Barazide Herbicide)",
+      "category": "Fungicide / Insecticide / Herbicide",
+      "reason": "One sentence why this increases yield",
+      "yield_impact": "+X quintals/acre estimate"
     }
   ],
-  "prevention_tip": "One actionable prevention tip for future"
+  "revenue_estimate_current": 45000,
+  "revenue_estimate_optimized": 67500,
+  "summary": "2-sentence overall assessment and key recommendation"
 }
 
-Always recommend 1-3 specific products from the AgroWave product list above. Map diseases correctly:
-- Fungal diseases (downy mildew, late blight, powdery mildew, rust, anthracnose) → Acrobat Fungicide, Bavistin Fungicide, Blu Copper Fungicide
-- Bacterial diseases → Blu Copper Fungicide
-- Insect/pest damage → Abacin Insecticide or Proclaim Insecticide
-- Weed competition visible → Barazide Herbicide
-- Broad spectrum protection → recommend both fungicide + insecticide`;
+Revenue estimates: assume ₹2000/quintal average market price for most crops, ₹3000 for vegetables/tomato.
+Always recommend 2-3 specific products from the AgroWave list. 
+Match products to limiting factors:
+- Disease risk / fungal → Acrobat Fungicide, Bavistin Fungicide, Blu Copper Fungicide
+- Pest risk → Abacin Insecticide, Proclaim Insecticide
+- Weed competition → Barazide Herbicide
+- General crop protection (all crops) → at minimum one fungicide`;
 
-const CAUSE_META = {
-  Fungal:               { icon: "🍄", color: "from-amber-500 to-orange-500" },
-  Bacterial:            { icon: "🦠", color: "from-red-500 to-rose-500" },
-  Viral:                { icon: "🧬", color: "from-purple-500 to-violet-500" },
-  Pest:                 { icon: "🐛", color: "from-green-500 to-emerald-500" },
-  "Nutrient Deficiency":{ icon: "🌱", color: "from-teal-500 to-cyan-500" },
-  Unknown:              { icon: "❓", color: "from-gray-400 to-gray-500" },
+const IMPACT_STYLES = {
+  High:   "bg-red-50 text-red-700 border border-red-200",
+  Medium: "bg-amber-50 text-amber-700 border border-amber-200",
+  Low:    "bg-blue-50 text-blue-700 border border-blue-200",
 };
 
-const CONFIDENCE_STYLES = {
-  High:   "bg-emerald-100 text-emerald-800 border border-emerald-200",
-  Medium: "bg-amber-100 text-amber-800 border border-amber-200",
-  Low:    "bg-red-100 text-red-800 border border-red-200",
+const GRADE_STYLES = {
+  "Below Average": { text: "text-red-500",     bar: "bg-red-400",     pct: 25 },
+  Average:         { text: "text-amber-500",   bar: "bg-amber-400",   pct: 50 },
+  Good:            { text: "text-[#4CAF50]",   bar: "bg-[#4CAF50]",   pct: 75 },
+  Excellent:       { text: "text-emerald-500", bar: "bg-emerald-500", pct: 100 },
 };
 
-const SEVERITY_STYLES = {
-  Mild:     "bg-yellow-50 text-yellow-800 border border-yellow-200",
-  Moderate: "bg-orange-50 text-orange-800 border border-orange-200",
-  Severe:   "bg-red-50 text-red-800 border border-red-200",
-  None:     "bg-emerald-50 text-emerald-800 border border-emerald-200",
-};
+const CAT_ICON = { Fungicide: "🍃", Insecticide: "🛡️", Herbicide: "🌾" };
 
-async function callAPI(imageBase64, imageMimeType, symptoms) {
-  const parts = [];
+const SelectField = ({ label, value, onChange, options, placeholder }) => (
+  <div>
+    <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">{label}</label>
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-white focus:border-[#4CAF50] focus:outline-none text-gray-800 text-sm appearance-none cursor-pointer transition-colors"
+      >
+        <option value="">{placeholder}</option>
+        {options.map((o) => <option key={o}>{o}</option>)}
+      </select>
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">▼</span>
+    </div>
+  </div>
+);
 
-  if (imageBase64) {
-    parts.push({
-      inline_data: {
-        mime_type: imageMimeType,
-        data: imageBase64,
-      },
-    });
-  }
+const InputField = ({ label, value, onChange, placeholder, type = "text" }) => (
+  <div>
+    <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">{label}</label>
+    <input
+      type={type}
+      min={type === "number" ? "0.1" : undefined}
+      step={type === "number" ? "0.5" : undefined}
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-white focus:border-[#4CAF50] focus:outline-none text-gray-800 text-sm transition-colors"
+    />
+  </div>
+);
 
-  const userText = imageBase64
-    ? symptoms.trim()
-      ? `${SYSTEM_PROMPT}\n\nAnalyze this crop leaf image for diseases. The farmer also reports: "${symptoms}". Return JSON only.`
-      : `${SYSTEM_PROMPT}\n\nAnalyze this crop leaf image for diseases and return JSON only.`
-    : `${SYSTEM_PROMPT}\n\nFarmer reports these crop symptoms: "${symptoms}". Identify the likely disease and return JSON only.`;
-
-  parts.push({ text: userText });
-
+async function callGeminiAPI(userPrompt) {
   const response = await fetch(GEMINI_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      contents: [{ parts }],
+      contents: [{
+        parts: [{ text: `${SYSTEM_PROMPT}\n\n${userPrompt}` }],
+      }],
       generationConfig: {
         temperature: 0.2,
         maxOutputTokens: 1024,
@@ -145,314 +151,273 @@ async function callAPI(imageBase64, imageMimeType, symptoms) {
   return JSON.parse(clean);
 }
 
-export default function CropDiseaseDetector() {
-  const [image, setImage] = useState(null);
-  const [imageBase64, setImageBase64] = useState(null);
-  const [imageMimeType, setImageMimeType] = useState("image/jpeg");
-  const [symptoms, setSymptoms] = useState("");
+export default function YieldPredictor() {
+  const [form, setForm] = useState({
+    crop: "", soil: "", acres: "", irrigation: "",
+    fertilizer: "", season: "", pestHistory: "", state: "",
+  });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [dragOver, setDragOver] = useState(false);
-  const fileRef = useRef();
 
-  const handleFile = (file) => {
-    if (!file || !file.type.startsWith("image/")) {
-      setError("Please upload a valid image file (JPG, PNG, WEBP).");
+  const update = (key) => (val) => setForm((f) => ({ ...f, [key]: val }));
+
+  const predict = async () => {
+    const { crop, soil, acres, irrigation, fertilizer, season } = form;
+    if (!crop || !soil || !acres || !irrigation || !fertilizer || !season) {
+      setError("Please fill in all required fields.");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image must be under 5MB.");
+    if (isNaN(parseFloat(acres)) || parseFloat(acres) <= 0) {
+      setError("Please enter a valid land size.");
       return;
     }
-    setError("");
-    setResult(null);
-    const url = URL.createObjectURL(file);
-    setImage(url);
-    setImageMimeType(file.type || "image/jpeg");
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64 = e.target.result.split(",")[1];
-      setImageBase64(base64);
-    };
-    reader.readAsDataURL(file);
-  };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragOver(false);
-    handleFile(e.dataTransfer.files[0]);
-  };
-
-  const analyzeDisease = async () => {
-    if (!imageBase64 && !symptoms.trim()) {
-      setError("Please upload a crop image or describe the symptoms.");
-      return;
-    }
     setError("");
     setLoading(true);
     setResult(null);
 
+    const userPrompt = `Predict yield for this Indian farm:
+- Crop: ${crop}
+- Land: ${acres} acres
+- Soil type: ${soil}
+- Irrigation: ${irrigation}
+- Fertilizer used: ${fertilizer}
+- Season: ${season}
+- State/Region: ${form.state || "Not specified"}
+- Past pest/disease problems: ${form.pestHistory || "None reported"}
+
+Return JSON analysis with yield prediction, limiting factors, and AgroWave product recommendations.`;
+
     try {
-      const parsed = await callAPI(imageBase64, imageMimeType, symptoms);
+      const parsed = await callGeminiAPI(userPrompt);
       setResult(parsed);
     } catch (err) {
       console.error(err);
-      setError(`Analysis failed: ${err.message || "Please try again or describe symptoms in text."}`);
+      setError(`Prediction failed: ${err.message || "Please check your inputs and try again."}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const causeMeta = result ? (CAUSE_META[result.cause] || CAUSE_META.Unknown) : null;
+  const grade = result ? (GRADE_STYLES[result.yield_grade] || GRADE_STYLES.Average) : null;
+  const extraRevenue = result
+    ? Number(result.revenue_estimate_optimized) - Number(result.revenue_estimate_current)
+    : 0;
 
   return (
-    <section id="disease-detector" className="py-24 bg-[#fafaf8] px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-30"
-        style={{ backgroundImage: "radial-gradient(circle at 20% 50%, #dcfce7 0%, transparent 50%), radial-gradient(circle at 80% 20%, #d1fae5 0%, transparent 40%)" }} />
+    <section id="yield-predictor" className="py-24 bg-white px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="absolute inset-0 opacity-20"
+        style={{ backgroundImage: "radial-gradient(circle at 80% 80%, #dcfce7 0%, transparent 50%)" }} />
 
       <div className="max-w-7xl mx-auto relative">
         {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-[#1a3c2e]/8 border border-[#1a3c2e]/15 rounded-full px-5 py-2 mb-6">
             <span className="w-2 h-2 rounded-full bg-[#4CAF50] animate-pulse" />
-            <span className="text-[#1a3c2e] font-semibold text-sm tracking-wide">AI-Powered Vision Analysis</span>
+            <span className="text-[#1a3c2e] font-semibold text-sm tracking-wide">AI Yield Intelligence</span>
           </div>
           <h2 className="text-5xl sm:text-6xl font-black text-gray-900 mb-5 leading-tight tracking-tight">
-            Crop Disease
+            Yield
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#1a3c2e] to-[#4CAF50]">
-              Detector
+              Predictor
             </span>
           </h2>
           <p className="text-gray-500 text-xl max-w-2xl mx-auto leading-relaxed font-light">
-            Upload a photo or describe symptoms — our AI diagnoses instantly and prescribes the right treatment from AgroWave.
+            Tell us about your farm. Our AI predicts your yield, finds what's holding it back, and shows exactly which products will boost your harvest.
           </p>
         </div>
 
         <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-[2rem] shadow-[0_8px_60px_rgba(0,0,0,0.08)] border border-gray-100 overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-2">
-              {/* LEFT — Input Panel */}
-              <div className="p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-gray-100">
-                <h3 className="text-lg font-black text-gray-900 mb-6 flex items-center gap-2">
-                  <span className="w-8 h-8 bg-[#4CAF50]/15 rounded-xl flex items-center justify-center text-sm">📸</span>
-                  Upload & Describe
-                </h3>
+          {/* Input Card */}
+          <div className="bg-[#fafaf8] rounded-[2rem] border border-gray-100 p-8 lg:p-10 mb-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 bg-[#1a3c2e] rounded-2xl flex items-center justify-center text-lg">🌾</div>
+              <div>
+                <h3 className="font-black text-gray-900">Farm Details</h3>
+                <p className="text-xs text-gray-400">Fields marked * are required</p>
+              </div>
+            </div>
 
-                {/* Drop Zone */}
-                <div
-                  className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 mb-5
-                    ${dragOver
-                      ? "ring-2 ring-[#4CAF50] ring-offset-2 bg-[#4CAF50]/5"
-                      : image
-                        ? "ring-2 ring-[#4CAF50]/30"
-                        : "border-2 border-dashed border-gray-200 hover:border-[#4CAF50]/60 hover:bg-[#4CAF50]/2"
-                    }`}
-                  style={{ minHeight: 200 }}
-                  onClick={() => fileRef.current?.click()}
-                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={handleDrop}
-                >
-                  {image ? (
-                    <>
-                      <img src={image} alt="Uploaded crop" className="w-full h-52 object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setImage(null); setImageBase64(null); setResult(null); }}
-                        className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-red-50 hover:text-red-500 transition-colors font-bold text-sm"
-                      >✕</button>
-                      <div className="absolute bottom-3 left-3">
-                        <span className="bg-[#4CAF50] text-white text-xs font-bold px-3 py-1 rounded-full">✓ Image ready</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-52 gap-3 p-6">
-                      <div className="w-16 h-16 bg-gradient-to-br from-[#1a3c2e]/8 to-[#4CAF50]/15 rounded-2xl flex items-center justify-center text-3xl">🌿</div>
-                      <div className="text-center">
-                        <p className="text-sm font-bold text-gray-700">Drop your crop image here</p>
-                        <p className="text-xs text-gray-400 mt-1">or click to browse · JPG, PNG, WEBP · max 5MB</p>
-                      </div>
-                      <span className="text-xs bg-gray-100 text-gray-500 px-3 py-1 rounded-full font-medium">Click to upload</span>
-                    </div>
-                  )}
-                  <input ref={fileRef} type="file" accept="image/*" className="hidden"
-                    onChange={(e) => handleFile(e.target.files[0])} />
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-5">
+              <SelectField label="Crop Type *" value={form.crop} onChange={update("crop")} options={crops} placeholder="Select crop..." />
+              <InputField label="Land Size (Acres) *" value={form.acres} onChange={update("acres")} type="number" placeholder="e.g. 5" />
+              <SelectField label="Soil Type *" value={form.soil} onChange={update("soil")} options={soils} placeholder="Select soil..." />
+              <SelectField label="Irrigation Method *" value={form.irrigation} onChange={update("irrigation")} options={irrigationOptions} placeholder="Select irrigation..." />
+              <SelectField label="Fertilizer Used *" value={form.fertilizer} onChange={update("fertilizer")} options={fertilizerOptions} placeholder="Select fertilizer..." />
+              <SelectField label="Season *" value={form.season} onChange={update("season")} options={seasons} placeholder="Select season..." />
+              <InputField label="State / Region" value={form.state} onChange={update("state")} placeholder="e.g. Maharashtra, Punjab" />
+              <div className="sm:col-span-2">
+                <InputField label="Past Pest / Disease Problems" value={form.pestHistory} onChange={update("pestHistory")} placeholder="e.g. Aphids last season, yellow rust, powdery mildew" />
+              </div>
+            </div>
 
-                {/* Divider */}
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="flex-1 h-px bg-gray-100" />
-                  <span className="text-xs text-gray-400 font-semibold uppercase tracking-widest">or</span>
-                  <div className="flex-1 h-px bg-gray-100" />
-                </div>
+            {error && (
+              <div className="mb-5 flex items-start gap-2 bg-red-50 border border-red-100 text-red-700 rounded-xl px-4 py-3 text-sm">
+                <span>⚠️</span><span>{error}</span>
+              </div>
+            )}
 
-                {/* Symptom Input */}
-                <div className="mb-5">
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    📝 Describe Symptoms
-                    <span className="ml-2 font-normal text-gray-400 text-xs">optional if image uploaded</span>
-                  </label>
-                  <textarea
-                    rows={4}
-                    placeholder="e.g. Yellow spots on leaves, brown edges, white powder, holes in leaves, wilting..."
-                    value={symptoms}
-                    onChange={(e) => setSymptoms(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-[#4CAF50] focus:outline-none text-gray-800 bg-gray-50 focus:bg-white transition-all text-sm resize-none placeholder-gray-400"
-                  />
-                </div>
+            <button onClick={predict} disabled={loading}
+              className="w-full py-4 bg-gradient-to-r from-[#1a3c2e] to-[#2d6a4f] text-white font-black text-base rounded-2xl hover:from-[#4CAF50] hover:to-[#1a3c2e] transition-all duration-500 shadow-lg hover:shadow-xl disabled:opacity-60 flex items-center justify-center gap-3 tracking-wide">
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373.0 0 5.373 0 12h4z" />
+                  </svg>
+                  Predicting with Gemini AI...
+                </>
+              ) : (
+                <>📈 Predict My Yield & Get Recommendations</>
+              )}
+            </button>
+          </div>
 
-                {error && (
-                  <div className="mb-5 flex items-start gap-2 bg-red-50 border border-red-100 text-red-700 rounded-xl px-4 py-3 text-sm">
-                    <span>⚠️</span><span>{error}</span>
+          {/* Results */}
+          {result && (
+            <div className="animate-fadeIn space-y-6">
+              {/* Summary Banner */}
+              <div className="bg-gradient-to-br from-[#0d2318] to-[#1a3c2e] rounded-[2rem] p-8 text-white shadow-2xl">
+                <p className="text-[#74C69D] text-sm leading-relaxed mb-6 max-w-2xl">{result.summary}</p>
+
+                {/* Yield Grade Bar */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white/60 text-xs font-semibold uppercase tracking-wider">Yield Grade</span>
+                    <span className={`font-black text-lg ${grade.text}`}>{result.yield_grade}</span>
                   </div>
-                )}
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-1000 ${grade.bar}`}
+                      style={{ width: `${grade.pct}%` }} />
+                  </div>
+                </div>
 
-                <button
-                  onClick={analyzeDisease}
-                  disabled={loading}
-                  className="w-full py-4 bg-gradient-to-r from-[#1a3c2e] to-[#2d6a4f] text-white font-black text-base rounded-2xl hover:from-[#4CAF50] hover:to-[#1a3c2e] transition-all duration-500 shadow-lg hover:shadow-xl disabled:opacity-60 flex items-center justify-center gap-3 tracking-wide"
-                >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      Analyzing with Gemini AI...
-                    </>
-                  ) : (
-                    <>🔬 Detect Disease & Get Treatment</>
-                  )}
-                </button>
-
-                {/* Capability pills */}
-                <div className="flex flex-wrap gap-2 mt-5">
-                  {["Fungal diseases", "Bacterial infections", "Pest damage", "Nutrient deficiency"].map((t) => (
-                    <span key={t} className="text-xs bg-[#4CAF50]/10 text-[#1a3c2e] px-3 py-1 rounded-full font-semibold border border-[#4CAF50]/20">✓ {t}</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {[
+                    { label: "Current Yield", value: `${result.current_yield_qtl_per_acre}`, unit: "qtl/acre", color: "text-white" },
+                    { label: "Potential Yield", value: `${result.optimized_yield_qtl_per_acre}`, unit: "qtl/acre", color: "text-[#4CAF50]" },
+                    { label: "Yield Gap", value: `+${result.yield_gap_percent}%`, unit: "untapped", color: "text-amber-400" },
+                    { label: "Extra Income", value: `₹${extraRevenue.toLocaleString("en-IN")}`, unit: "potential", color: "text-[#74C69D]" },
+                  ].map((s) => (
+                    <div key={s.label} className="bg-white/10 rounded-2xl p-4 text-center border border-white/10">
+                      <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
+                      <p className="text-white/40 text-xs mt-0.5">{s.unit}</p>
+                      <p className="text-white/60 text-xs font-semibold mt-1">{s.label}</p>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              {/* RIGHT — Results Panel */}
-              <div className="p-8 lg:p-10 bg-gradient-to-br from-gray-50 to-white">
-                {!result && !loading && (
-                  <div className="h-full flex flex-col items-center justify-center text-center gap-5 py-10">
-                    <div className="w-24 h-24 bg-gradient-to-br from-[#1a3c2e]/8 to-[#4CAF50]/15 rounded-3xl flex items-center justify-center text-5xl">🔬</div>
-                    <div>
-                      <p className="font-black text-gray-700 text-lg mb-2">Ready to Diagnose</p>
-                      <p className="text-gray-400 text-sm leading-relaxed max-w-xs">Upload a leaf photo or describe what you see. Instant AI diagnosis with product recommendations.</p>
-                    </div>
-                    <div className="w-full max-w-xs bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-left">
-                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">What we detect</p>
-                      {[
-                        ["🍄", "Downy mildew, late blight, rust"],
-                        ["🦠", "Bacterial leaf spot, wilt"],
-                        ["🐛", "Aphids, caterpillars, borers"],
-                        ["🌱", "Iron, zinc, NPK deficiency"],
-                      ].map(([icon, label]) => (
-                        <div key={label} className="flex items-center gap-2 py-1.5">
-                          <span>{icon}</span>
-                          <span className="text-xs text-gray-600">{label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {loading && (
-                  <div className="h-full flex flex-col items-center justify-center gap-5">
-                    <div className="relative">
-                      <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#1a3c2e] to-[#4CAF50] flex items-center justify-center">
-                        <span className="text-4xl animate-pulse">🧬</span>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Revenue Estimate */}
+                <div className="bg-white rounded-[1.5rem] border border-gray-100 p-6 shadow-sm">
+                  <h3 className="font-black text-gray-900 mb-5 flex items-center gap-2">
+                    <span className="text-xl">💰</span>
+                    Revenue Estimate ({form.acres} acres)
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4">
+                      <div>
+                        <p className="text-xs text-gray-400 font-semibold">Current Earnings</p>
+                        <p className="text-2xl font-black text-gray-700">
+                          ₹{Number(result.revenue_estimate_current).toLocaleString("en-IN")}
+                        </p>
                       </div>
-                      <div className="absolute -inset-2 rounded-[20px] border-2 border-[#4CAF50]/30 animate-ping" />
+                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center text-2xl">📉</div>
                     </div>
-                    <div className="text-center">
-                      <p className="font-black text-gray-800 text-lg">Analyzing...</p>
-                      <p className="text-gray-400 text-sm mt-1">Gemini AI is examining your crop</p>
+                    <div className="flex items-center justify-between bg-[#4CAF50]/8 border border-[#4CAF50]/20 rounded-xl p-4">
+                      <div>
+                        <p className="text-xs text-[#4CAF50] font-semibold">With Optimization</p>
+                        <p className="text-2xl font-black text-[#1a3c2e]">
+                          ₹{Number(result.revenue_estimate_optimized).toLocaleString("en-IN")}
+                        </p>
+                      </div>
+                      <div className="w-12 h-12 bg-[#4CAF50]/20 rounded-xl flex items-center justify-center text-2xl">📈</div>
                     </div>
-                    <div className="flex gap-1.5">
-                      {[0, 1, 2].map((i) => (
-                        <div key={i} className="w-2 h-2 rounded-full bg-[#4CAF50] animate-bounce"
-                          style={{ animationDelay: `${i * 0.15}s` }} />
-                      ))}
+                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                      <p className="text-amber-800 font-black text-sm">
+                        +₹{extraRevenue.toLocaleString("en-IN")} extra potential income
+                      </p>
                     </div>
                   </div>
-                )}
+                </div>
 
-                {result && (
-                  <div className="flex flex-col gap-4 animate-fadeIn">
-                    {/* Disease Card */}
-                    <div className={`rounded-2xl p-5 bg-gradient-to-br ${causeMeta.color} text-white`}>
-                      <div className="flex items-start justify-between gap-3 mb-3">
+                {/* Limiting Factors */}
+                <div className="bg-white rounded-[1.5rem] border border-gray-100 p-6 shadow-sm">
+                  <h3 className="font-black text-gray-900 mb-5 flex items-center gap-2">
+                    <span className="text-xl">⚠️</span>
+                    What's Limiting Your Yield
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {result.limiting_factors?.map((f, i) => (
+                      <div key={i} className={`flex items-start gap-3 rounded-xl p-3 ${IMPACT_STYLES[f.impact]}`}>
+                        <span className={`text-xs font-black px-2 py-1 rounded-lg border shrink-0 ${IMPACT_STYLES[f.impact]}`}>{f.impact}</span>
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xl">{causeMeta.icon}</span>
-                            <span className="text-white/80 text-xs font-bold uppercase tracking-wider">{result.cause}</span>
-                          </div>
-                          <h3 className="text-2xl font-black leading-tight">{result.disease}</h3>
-                        </div>
-                        <div className="flex flex-col gap-1.5 shrink-0">
-                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${CONFIDENCE_STYLES[result.confidence]}`}>
-                            {result.confidence} confidence
-                          </span>
-                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${SEVERITY_STYLES[result.severity]}`}>
-                            {result.severity} severity
-                          </span>
+                          <p className="text-sm font-bold">{f.factor}</p>
+                          <p className="text-xs opacity-80 mt-0.5 leading-relaxed">{f.description}</p>
                         </div>
                       </div>
-                      <p className="text-white/85 text-sm leading-relaxed">{result.description}</p>
-                    </div>
-
-                    {/* Treatment Steps */}
-                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
-                      <p className="text-amber-900 text-xs font-black uppercase tracking-wider mb-3">Treatment Plan</p>
-                      <div className="flex flex-col gap-2.5">
-                        {result.treatment_steps?.map((step, i) => (
-                          <div key={i} className="flex gap-3 items-start">
-                            <span className="w-6 h-6 bg-amber-200 text-amber-900 rounded-full text-xs font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-                            <p className="text-gray-700 text-sm leading-relaxed">{step}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Recommended Products */}
-                    <div>
-                      <p className="text-sm font-black text-gray-900 mb-2.5">🛒 Recommended Products</p>
-                      <div className="flex flex-col gap-2">
-                        {result.recommended_products?.map((prod, i) => {
-                          const match = PRODUCT_MAP[prod.name] || { url: SHOPIFY_URLS.all, price: "View" };
-                          return (
-                            <div key={i} className="flex items-center gap-3 bg-[#1a3c2e]/4 border border-[#4CAF50]/20 rounded-xl p-3 hover:border-[#4CAF50]/50 hover:bg-[#4CAF50]/6 transition-all">
-                              <div className="w-10 h-10 bg-[#4CAF50]/20 rounded-xl flex items-center justify-center text-lg shrink-0">🌿</div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-gray-900 truncate">{prod.name}</p>
-                                <p className="text-xs text-gray-500 leading-snug">{prod.reason}</p>
-                              </div>
-                              <a href={match.url} target="_blank" rel="noopener noreferrer"
-                                className="shrink-0 px-3 py-2 bg-[#1a3c2e] text-white text-xs font-bold rounded-lg hover:bg-[#4CAF50] transition-colors whitespace-nowrap">
-                                Buy {match.price}
-                              </a>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Prevention Tip */}
-                    {result.prevention_tip && (
-                      <div className="bg-blue-50 border border-blue-100 rounded-xl p-3.5">
-                        <p className="text-blue-900 text-xs font-black mb-1">💡 Prevention Tip</p>
-                        <p className="text-blue-800 text-xs leading-relaxed">{result.prevention_tip}</p>
-                      </div>
-                    )}
+                    ))}
                   </div>
-                )}
+                </div>
+              </div>
+
+              {/* Recommended Products */}
+              <div className="bg-white rounded-[1.5rem] border border-gray-100 p-6 shadow-sm">
+                <div className="mb-6">
+                  <h3 className="font-black text-gray-900 text-lg flex items-center gap-2">
+                    <span>🛒</span> AgroWave Products to Boost Your Yield
+                  </h3>
+                  <p className="text-gray-400 text-sm mt-1">Targeted solutions for your specific yield-limiting factors</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {result.recommended_products?.map((prod, i) => {
+                    const match = PRODUCT_MAP[prod.name] || { url: SHOPIFY_URLS.all, price: "View" };
+                    return (
+                      <div key={i} className="bg-[#fafaf8] border border-gray-100 rounded-2xl p-5 hover:border-[#4CAF50]/40 hover:shadow-md transition-all group">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-2xl">{CAT_ICON[prod.category] || "🌱"}</span>
+                          <span className="text-xs font-black text-gray-400 uppercase tracking-wider">{prod.category}</span>
+                        </div>
+                        <p className="font-black text-gray-900 text-sm mb-1.5">{prod.name}</p>
+                        <p className="text-gray-500 text-xs mb-3 leading-relaxed">{prod.reason}</p>
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className="w-2 h-2 rounded-full bg-[#4CAF50]" />
+                          <p className="text-[#1a3c2e] font-black text-xs">{prod.yield_impact} yield gain</p>
+                        </div>
+                        <a href={match.url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 w-full py-2.5 bg-[#1a3c2e] text-white text-xs font-black rounded-xl hover:bg-[#4CAF50] transition-colors">
+                          🛒 Buy Now — {match.price}
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Action Plan */}
+              <div className="bg-gradient-to-br from-[#f0fff4] to-white border border-[#4CAF50]/20 rounded-[1.5rem] p-6">
+                <h3 className="font-black text-gray-900 text-lg mb-5 flex items-center gap-2">
+                  <span>✅</span> Action Plan to Reach Optimal Yield
+                </h3>
+                <div className="space-y-3">
+                  {result.optimization_actions?.map((a, i) => (
+                    <div key={i} className="flex items-center gap-4 bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                      <div className="w-9 h-9 bg-gradient-to-br from-[#1a3c2e] to-[#4CAF50] rounded-xl flex items-center justify-center text-white text-sm font-black shrink-0">
+                        {i + 1}
+                      </div>
+                      <p className="flex-1 text-sm font-bold text-gray-800">{a.action}</p>
+                      <div className="shrink-0 text-right">
+                        <p className="text-[#4CAF50] font-black text-base">+{a.expected_gain_qtl}</p>
+                        <p className="text-gray-400 text-xs">qtl/acre</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </section>
