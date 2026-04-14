@@ -59,6 +59,8 @@ Match products to limiting factors:
 - Weed competition → Barazide Herbicide
 - General crop protection (all crops) → at minimum one fungicide`;
 
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+
 const IMPACT_STYLES = {
   High:   "bg-red-50 text-red-700 border border-red-200",
   Medium: "bg-amber-50 text-amber-700 border border-amber-200",
@@ -127,11 +129,18 @@ export default function YieldPredictor() {
       setError("Please enter a valid land size.");
       return;
     }
+
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      setError("Gemini API key not found. Add VITE_GEMINI_API_KEY to your .env file.");
+      return;
+    }
+
     setError("");
     setLoading(true);
     setResult(null);
 
-    const prompt = `Predict yield for this Indian farm:
+    const userPrompt = `Predict yield for this Indian farm:
 - Crop: ${crop}
 - Land: ${acres} acres
 - Soil type: ${soil}
@@ -144,28 +153,40 @@ export default function YieldPredictor() {
 Return JSON analysis with yield prediction, limiting factors, and AgroWave product recommendations.`;
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: prompt }],
+          contents: [
+            {
+              role: "user",
+              parts: [
+                { text: SYSTEM_PROMPT },
+                { text: userPrompt },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 1024,
+            responseMimeType: "application/json",
+          },
         }),
       });
 
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData?.error?.message || `API error ${response.status}`);
+      }
+
       const data = await response.json();
-      const text = data.content?.find((b) => b.type === "text")?.text || "";
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
       const clean = text.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       setResult(parsed);
     } catch (err) {
       console.error(err);
-      setError("Prediction failed. Please check your inputs and try again.");
+      setError(`Prediction failed: ${err.message || "Please check your inputs and try again."}`);
     } finally {
       setLoading(false);
     }
@@ -237,7 +258,7 @@ Return JSON analysis with yield prediction, limiting factors, and AgroWave produ
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Predicting with AI...
+                  Predicting with Gemini AI...
                 </>
               ) : (
                 <>📈 Predict My Yield & Get Recommendations</>
