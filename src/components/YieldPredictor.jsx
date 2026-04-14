@@ -1,4 +1,4 @@
-const OPENROUTER_API_KEY = "your_openrouter_key_here"; // paste your key
+const OPENROUTER_API_KEY = "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"; // paste your key
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 async function callAPI(userPrompt) {
