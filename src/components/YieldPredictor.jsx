@@ -59,22 +59,63 @@ Match products to limiting factors:
 - Weed competition → Barazide Herbicide
 - General crop protection (all crops) → at minimum one fungicide`;
 
+const IMPACT_STYLES = {
+  High:   "bg-red-50 text-red-700 border border-red-200",
+  Medium: "bg-amber-50 text-amber-700 border border-amber-200",
+  Low:    "bg-blue-50 text-blue-700 border border-blue-200",
+};
+
+const GRADE_STYLES = {
+  "Below Average": { text: "text-red-500",     bar: "bg-red-400",     pct: 25 },
+  Average:         { text: "text-amber-500",   bar: "bg-amber-400",   pct: 50 },
+  Good:            { text: "text-[#4CAF50]",   bar: "bg-[#4CAF50]",   pct: 75 },
+  Excellent:       { text: "text-emerald-500", bar: "bg-emerald-500", pct: 100 },
+};
+
+const CAT_ICON = { Fungicide: "🍃", Insecticide: "🛡️", Herbicide: "🌾" };
+
+const SelectField = ({ label, value, onChange, options, placeholder }) => (
+  <div>
+    <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">{label}</label>
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-white focus:border-[#4CAF50] focus:outline-none text-gray-800 text-sm appearance-none cursor-pointer transition-colors"
+      >
+        <option value="">{placeholder}</option>
+        {options.map((o) => <option key={o}>{o}</option>)}
+      </select>
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">▼</span>
+    </div>
+  </div>
+);
+
+const InputField = ({ label, value, onChange, placeholder, type = "text" }) => (
+  <div>
+    <label className="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">{label}</label>
+    <input
+      type={type}
+      min={type === "number" ? "0.1" : undefined}
+      step={type === "number" ? "0.5" : undefined}
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 bg-white focus:border-[#4CAF50] focus:outline-none text-gray-800 text-sm transition-colors"
+    />
+  </div>
+);
+
 export default function YieldPredictor() {
   const [form, setForm] = useState({
-    crop: "",
-    soil: "",
-    acres: "",
-    irrigation: "",
-    fertilizer: "",
-    season: "",
-    pestHistory: "",
-    state: "",
+    crop: "", soil: "", acres: "", irrigation: "",
+    fertilizer: "", season: "", pestHistory: "", state: "",
   });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const update = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+  const update = (key) => (val) => setForm((f) => ({ ...f, [key]: val }));
 
   const predict = async () => {
     const { crop, soil, acres, irrigation, fertilizer, season } = form;
@@ -105,7 +146,10 @@ Return JSON analysis with yield prediction, limiting factors, and AgroWave produ
     try {
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 1000,
@@ -119,126 +163,77 @@ Return JSON analysis with yield prediction, limiting factors, and AgroWave produ
       const clean = text.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
       setResult(parsed);
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError("Prediction failed. Please check your inputs and try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const impactColor = {
-    High: "bg-red-100 text-red-700 border-red-200",
-    Medium: "bg-amber-100 text-amber-700 border-amber-200",
-    Low: "bg-blue-100 text-blue-700 border-blue-200",
-  };
-
-  const gradeColor = {
-    "Below Average": "text-red-600",
-    Average: "text-amber-600",
-    Good: "text-[#4CAF50]",
-    Excellent: "text-emerald-600",
-  };
-
-  const categoryIcon = { Fungicide: "🍃", Insecticide: "🛡️", Herbicide: "🌾" };
+  const grade = result ? (GRADE_STYLES[result.yield_grade] || GRADE_STYLES.Average) : null;
+  const extraRevenue = result
+    ? Number(result.revenue_estimate_optimized) - Number(result.revenue_estimate_current)
+    : 0;
 
   return (
-    <section id="yield-predictor" className="py-20 bg-white px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <section id="yield-predictor" className="py-24 bg-white px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="absolute inset-0 opacity-20"
+        style={{ backgroundImage: "radial-gradient(circle at 80% 80%, #dcfce7 0%, transparent 50%)" }} />
+
+      <div className="max-w-7xl mx-auto relative">
         {/* Header */}
-        <div className="text-center mb-14">
-          <span className="inline-block text-[#4CAF50] font-semibold text-sm uppercase tracking-widest mb-3">
-            AI Prediction
-          </span>
-          <h2 className="text-4xl font-black text-gray-900 mb-4">
-            Yield <span className="text-[#1a3c2e]">Predictor</span>
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 bg-[#1a3c2e]/8 border border-[#1a3c2e]/15 rounded-full px-5 py-2 mb-6">
+            <span className="w-2 h-2 rounded-full bg-[#4CAF50] animate-pulse" />
+            <span className="text-[#1a3c2e] font-semibold text-sm tracking-wide">AI Yield Intelligence</span>
+          </div>
+          <h2 className="text-5xl sm:text-6xl font-black text-gray-900 mb-5 leading-tight tracking-tight">
+            Yield
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#1a3c2e] to-[#4CAF50]">
+              Predictor
+            </span>
           </h2>
-          <p className="text-gray-500 text-lg max-w-xl mx-auto">
-            Enter your farm details. Our AI predicts your current yield, identifies what's limiting it, and shows exactly which products can boost your harvest.
+          <p className="text-gray-500 text-xl max-w-2xl mx-auto leading-relaxed font-light">
+            Tell us about your farm. Our AI predicts your yield, finds what's holding it back, and shows exactly which products will boost your harvest.
           </p>
         </div>
 
         <div className="max-w-5xl mx-auto">
-          {/* Input Form */}
-          <div className="bg-gradient-to-br from-[#f0fff4] to-white border border-[#4CAF50]/30 rounded-3xl p-8 shadow-lg mb-8">
-            <h3 className="text-lg font-black text-gray-900 mb-6 flex items-center gap-2">
-              🌾 Farm Details
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
-              {/* Crop */}
+          {/* Input Card */}
+          <div className="bg-[#fafaf8] rounded-[2rem] border border-gray-100 p-8 lg:p-10 mb-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 bg-[#1a3c2e] rounded-2xl flex items-center justify-center text-lg">🌾</div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Crop Type *</label>
-                <select value={form.crop} onChange={(e) => update("crop", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#4CAF50] focus:outline-none text-gray-800 bg-white">
-                  <option value="">Select crop...</option>
-                  {crops.map((c) => <option key={c}>{c}</option>)}
-                </select>
-              </div>
-              {/* Acres */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Land Size (Acres) *</label>
-                <input type="number" min="0.1" step="0.5" placeholder="e.g. 5"
-                  value={form.acres} onChange={(e) => update("acres", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#4CAF50] focus:outline-none text-gray-800 bg-white" />
-              </div>
-              {/* Soil */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Soil Type *</label>
-                <select value={form.soil} onChange={(e) => update("soil", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#4CAF50] focus:outline-none text-gray-800 bg-white">
-                  <option value="">Select soil...</option>
-                  {soils.map((s) => <option key={s}>{s}</option>)}
-                </select>
-              </div>
-              {/* Irrigation */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Irrigation Method *</label>
-                <select value={form.irrigation} onChange={(e) => update("irrigation", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#4CAF50] focus:outline-none text-gray-800 bg-white">
-                  <option value="">Select irrigation...</option>
-                  {irrigationOptions.map((i) => <option key={i}>{i}</option>)}
-                </select>
-              </div>
-              {/* Fertilizer */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Fertilizer Used *</label>
-                <select value={form.fertilizer} onChange={(e) => update("fertilizer", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#4CAF50] focus:outline-none text-gray-800 bg-white">
-                  <option value="">Select fertilizer...</option>
-                  {fertilizerOptions.map((f) => <option key={f}>{f}</option>)}
-                </select>
-              </div>
-              {/* Season */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Season *</label>
-                <select value={form.season} onChange={(e) => update("season", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#4CAF50] focus:outline-none text-gray-800 bg-white">
-                  <option value="">Select season...</option>
-                  {seasons.map((s) => <option key={s}>{s}</option>)}
-                </select>
-              </div>
-              {/* State */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">State / Region <span className="text-gray-400 font-normal">(optional)</span></label>
-                <input type="text" placeholder="e.g. Maharashtra, Punjab"
-                  value={form.state} onChange={(e) => update("state", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#4CAF50] focus:outline-none text-gray-800 bg-white" />
-              </div>
-              {/* Pest history */}
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Past Pest / Disease Problems <span className="text-gray-400 font-normal">(optional)</span></label>
-                <input type="text" placeholder="e.g. Aphids last season, yellow rust, powdery mildew"
-                  value={form.pestHistory} onChange={(e) => update("pestHistory", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#4CAF50] focus:outline-none text-gray-800 bg-white" />
+                <h3 className="font-black text-gray-900">Farm Details</h3>
+                <p className="text-xs text-gray-400">Fields marked * are required</p>
               </div>
             </div>
 
-            {error && <p className="text-red-500 text-sm mb-4 bg-red-50 px-4 py-2 rounded-xl">⚠️ {error}</p>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-5">
+              <SelectField label="Crop Type *" value={form.crop} onChange={update("crop")} options={crops} placeholder="Select crop..." />
+              <InputField label="Land Size (Acres) *" value={form.acres} onChange={update("acres")} type="number" placeholder="e.g. 5" />
+              <SelectField label="Soil Type *" value={form.soil} onChange={update("soil")} options={soils} placeholder="Select soil..." />
+              <SelectField label="Irrigation Method *" value={form.irrigation} onChange={update("irrigation")} options={irrigationOptions} placeholder="Select irrigation..." />
+              <SelectField label="Fertilizer Used *" value={form.fertilizer} onChange={update("fertilizer")} options={fertilizerOptions} placeholder="Select fertilizer..." />
+              <SelectField label="Season *" value={form.season} onChange={update("season")} options={seasons} placeholder="Select season..." />
+              <InputField label="State / Region" value={form.state} onChange={update("state")} placeholder="e.g. Maharashtra, Punjab" />
+              <div className="sm:col-span-2">
+                <InputField label="Past Pest / Disease Problems" value={form.pestHistory} onChange={update("pestHistory")} placeholder="e.g. Aphids last season, yellow rust, powdery mildew" />
+              </div>
+            </div>
+
+            {error && (
+              <div className="mb-5 flex items-start gap-2 bg-red-50 border border-red-100 text-red-700 rounded-xl px-4 py-3 text-sm">
+                <span>⚠️</span><span>{error}</span>
+              </div>
+            )}
 
             <button onClick={predict} disabled={loading}
-              className="w-full py-4 bg-gradient-to-r from-[#1a3c2e] to-[#4CAF50] text-white font-bold text-lg rounded-2xl hover:from-[#4CAF50] hover:to-[#1a3c2e] transition-all duration-300 shadow-md hover:shadow-xl disabled:opacity-70 flex items-center justify-center gap-3">
+              className="w-full py-4 bg-gradient-to-r from-[#1a3c2e] to-[#2d6a4f] text-white font-black text-base rounded-2xl hover:from-[#4CAF50] hover:to-[#1a3c2e] transition-all duration-500 shadow-lg hover:shadow-xl disabled:opacity-60 flex items-center justify-center gap-3 tracking-wide">
               {loading ? (
                 <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
@@ -252,65 +247,86 @@ Return JSON analysis with yield prediction, limiting factors, and AgroWave produ
 
           {/* Results */}
           {result && (
-            <div className="animate-fadeIn">
+            <div className="animate-fadeIn space-y-6">
               {/* Summary Banner */}
-              <div className="bg-gradient-to-r from-[#0d2318] to-[#1a3c2e] rounded-3xl p-8 text-white mb-6">
-                <p className="text-[#74C69D] text-sm font-semibold mb-4">{result.summary}</p>
+              <div className="bg-gradient-to-br from-[#0d2318] to-[#1a3c2e] rounded-[2rem] p-8 text-white shadow-2xl">
+                <p className="text-[#74C69D] text-sm leading-relaxed mb-6 max-w-2xl">{result.summary}</p>
+
+                {/* Yield Grade Bar */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white/60 text-xs font-semibold uppercase tracking-wider">Yield Grade</span>
+                    <span className={`font-black text-lg ${grade.text}`}>{result.yield_grade}</span>
+                  </div>
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-1000 ${grade.bar}`}
+                      style={{ width: `${grade.pct}%` }} />
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="bg-white/15 rounded-2xl p-4 text-center">
-                    <p className="text-2xl font-black">{result.current_yield_qtl_per_acre} <span className="text-sm font-medium">qtl/acre</span></p>
-                    <p className="text-[#a5d6a7] text-xs mt-1">Current Yield</p>
-                  </div>
-                  <div className="bg-white/15 rounded-2xl p-4 text-center">
-                    <p className="text-2xl font-black text-[#4CAF50]">{result.optimized_yield_qtl_per_acre} <span className="text-sm font-medium">qtl/acre</span></p>
-                    <p className="text-[#a5d6a7] text-xs mt-1">Potential Yield</p>
-                  </div>
-                  <div className="bg-white/15 rounded-2xl p-4 text-center">
-                    <p className={`text-2xl font-black ${gradeColor[result.yield_grade] || "text-white"}`}>{result.yield_grade}</p>
-                    <p className="text-[#a5d6a7] text-xs mt-1">Yield Grade</p>
-                  </div>
-                  <div className="bg-white/15 rounded-2xl p-4 text-center">
-                    <p className="text-2xl font-black text-amber-400">+{result.yield_gap_percent}%</p>
-                    <p className="text-[#a5d6a7] text-xs mt-1">Yield Gap</p>
-                  </div>
+                  {[
+                    { label: "Current Yield", value: `${result.current_yield_qtl_per_acre}`, unit: "qtl/acre", color: "text-white" },
+                    { label: "Potential Yield", value: `${result.optimized_yield_qtl_per_acre}`, unit: "qtl/acre", color: "text-[#4CAF50]" },
+                    { label: "Yield Gap", value: `+${result.yield_gap_percent}%`, unit: "untapped", color: "text-amber-400" },
+                    { label: "Extra Income", value: `₹${extraRevenue.toLocaleString("en-IN")}`, unit: "potential", color: "text-[#74C69D]" },
+                  ].map((s) => (
+                    <div key={s.label} className="bg-white/10 rounded-2xl p-4 text-center border border-white/10">
+                      <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
+                      <p className="text-white/40 text-xs mt-0.5">{s.unit}</p>
+                      <p className="text-white/60 text-xs font-semibold mt-1">{s.label}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Revenue Estimate */}
-                <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-                  <h3 className="font-black text-gray-900 mb-4">💰 Revenue Estimate ({form.acres} acres)</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 rounded-2xl p-4 text-center">
-                      <p className="text-xs text-gray-400 mb-1">Current Earnings</p>
-                      <p className="text-xl font-black text-gray-700">
-                        ₹{Number(result.revenue_estimate_current).toLocaleString("en-IN")}
+                <div className="bg-white rounded-[1.5rem] border border-gray-100 p-6 shadow-sm">
+                  <h3 className="font-black text-gray-900 mb-5 flex items-center gap-2">
+                    <span className="text-xl">💰</span>
+                    Revenue Estimate ({form.acres} acres)
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4">
+                      <div>
+                        <p className="text-xs text-gray-400 font-semibold">Current Earnings</p>
+                        <p className="text-2xl font-black text-gray-700">
+                          ₹{Number(result.revenue_estimate_current).toLocaleString("en-IN")}
+                        </p>
+                      </div>
+                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center text-2xl">📉</div>
+                    </div>
+                    <div className="flex items-center justify-between bg-[#4CAF50]/8 border border-[#4CAF50]/20 rounded-xl p-4">
+                      <div>
+                        <p className="text-xs text-[#4CAF50] font-semibold">With Optimization</p>
+                        <p className="text-2xl font-black text-[#1a3c2e]">
+                          ₹{Number(result.revenue_estimate_optimized).toLocaleString("en-IN")}
+                        </p>
+                      </div>
+                      <div className="w-12 h-12 bg-[#4CAF50]/20 rounded-xl flex items-center justify-center text-2xl">📈</div>
+                    </div>
+                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                      <p className="text-amber-800 font-black text-sm">
+                        +₹{extraRevenue.toLocaleString("en-IN")} extra potential income
                       </p>
                     </div>
-                    <div className="bg-[#4CAF50]/10 rounded-2xl p-4 text-center border border-[#4CAF50]/30">
-                      <p className="text-xs text-[#4CAF50] mb-1">With Optimization</p>
-                      <p className="text-xl font-black text-[#1a3c2e]">
-                        ₹{Number(result.revenue_estimate_optimized).toLocaleString("en-IN")}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 bg-amber-50 rounded-xl px-4 py-3">
-                    <p className="text-amber-800 text-sm font-bold">
-                      Extra ₹{(Number(result.revenue_estimate_optimized) - Number(result.revenue_estimate_current)).toLocaleString("en-IN")} potential income
-                    </p>
                   </div>
                 </div>
 
                 {/* Limiting Factors */}
-                <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-                  <h3 className="font-black text-gray-900 mb-4">⚠️ What's Limiting Your Yield</h3>
+                <div className="bg-white rounded-[1.5rem] border border-gray-100 p-6 shadow-sm">
+                  <h3 className="font-black text-gray-900 mb-5 flex items-center gap-2">
+                    <span className="text-xl">⚠️</span>
+                    What's Limiting Your Yield
+                  </h3>
                   <div className="flex flex-col gap-3">
                     {result.limiting_factors?.map((f, i) => (
-                      <div key={i} className={`flex items-start gap-3 border rounded-xl p-3 ${impactColor[f.impact]}`}>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full border shrink-0 ${impactColor[f.impact]}`}>{f.impact}</span>
+                      <div key={i} className={`flex items-start gap-3 rounded-xl p-3 ${IMPACT_STYLES[f.impact]}`}>
+                        <span className={`text-xs font-black px-2 py-1 rounded-lg border shrink-0 ${IMPACT_STYLES[f.impact]}`}>{f.impact}</span>
                         <div>
                           <p className="text-sm font-bold">{f.factor}</p>
-                          <p className="text-xs opacity-80 mt-0.5">{f.description}</p>
+                          <p className="text-xs opacity-80 mt-0.5 leading-relaxed">{f.description}</p>
                         </div>
                       </div>
                     ))}
@@ -319,23 +335,30 @@ Return JSON analysis with yield prediction, limiting factors, and AgroWave produ
               </div>
 
               {/* Recommended Products */}
-              <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm mb-6">
-                <h3 className="font-black text-gray-900 mb-2">🛒 AgroWave Products to Boost Your Yield</h3>
-                <p className="text-gray-400 text-sm mb-5">These specific products will address your yield-limiting factors</p>
+              <div className="bg-white rounded-[1.5rem] border border-gray-100 p-6 shadow-sm">
+                <div className="mb-6">
+                  <h3 className="font-black text-gray-900 text-lg flex items-center gap-2">
+                    <span>🛒</span> AgroWave Products to Boost Your Yield
+                  </h3>
+                  <p className="text-gray-400 text-sm mt-1">Targeted solutions for your specific yield-limiting factors</p>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {result.recommended_products?.map((prod, i) => {
                     const match = PRODUCT_MAP[prod.name] || { url: SHOPIFY_URLS.all, price: "View" };
                     return (
-                      <div key={i} className="border border-gray-100 rounded-2xl p-4 hover:border-[#4CAF50]/40 hover:shadow-md transition-all">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xl">{categoryIcon[prod.category] || "🌱"}</span>
-                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{prod.category}</span>
+                      <div key={i} className="bg-[#fafaf8] border border-gray-100 rounded-2xl p-5 hover:border-[#4CAF50]/40 hover:shadow-md transition-all group">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-2xl">{CAT_ICON[prod.category] || "🌱"}</span>
+                          <span className="text-xs font-black text-gray-400 uppercase tracking-wider">{prod.category}</span>
                         </div>
-                        <p className="font-bold text-gray-900 text-sm mb-1">{prod.name}</p>
-                        <p className="text-gray-500 text-xs mb-2 leading-relaxed">{prod.reason}</p>
-                        <p className="text-[#4CAF50] font-bold text-xs mb-3">{prod.yield_impact} yield gain</p>
+                        <p className="font-black text-gray-900 text-sm mb-1.5">{prod.name}</p>
+                        <p className="text-gray-500 text-xs mb-3 leading-relaxed">{prod.reason}</p>
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className="w-2 h-2 rounded-full bg-[#4CAF50]" />
+                          <p className="text-[#1a3c2e] font-black text-xs">{prod.yield_impact} yield gain</p>
+                        </div>
                         <a href={match.url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-1 w-full py-2.5 bg-[#1a3c2e] text-white text-xs font-bold rounded-xl hover:bg-[#4CAF50] transition-colors">
+                          className="flex items-center justify-center gap-1.5 w-full py-2.5 bg-[#1a3c2e] text-white text-xs font-black rounded-xl hover:bg-[#4CAF50] transition-colors">
                           🛒 Buy Now — {match.price}
                         </a>
                       </div>
@@ -344,20 +367,20 @@ Return JSON analysis with yield prediction, limiting factors, and AgroWave produ
                 </div>
               </div>
 
-              {/* Optimization Actions */}
-              <div className="bg-gradient-to-br from-[#f0fff4] to-white border border-[#4CAF50]/20 rounded-3xl p-6">
-                <h3 className="font-black text-gray-900 mb-4">✅ Action Plan to Reach Optimal Yield</h3>
-                <div className="flex flex-col gap-3">
+              {/* Action Plan */}
+              <div className="bg-gradient-to-br from-[#f0fff4] to-white border border-[#4CAF50]/20 rounded-[1.5rem] p-6">
+                <h3 className="font-black text-gray-900 text-lg mb-5 flex items-center gap-2">
+                  <span>✅</span> Action Plan to Reach Optimal Yield
+                </h3>
+                <div className="space-y-3">
                   {result.optimization_actions?.map((a, i) => (
-                    <div key={i} className="flex items-center gap-4 bg-white rounded-xl p-4 border border-gray-100">
-                      <div className="w-8 h-8 bg-[#4CAF50]/20 rounded-xl flex items-center justify-center text-sm font-black text-[#1a3c2e] shrink-0">
+                    <div key={i} className="flex items-center gap-4 bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                      <div className="w-9 h-9 bg-gradient-to-br from-[#1a3c2e] to-[#4CAF50] rounded-xl flex items-center justify-center text-white text-sm font-black shrink-0">
                         {i + 1}
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-bold text-gray-800">{a.action}</p>
-                      </div>
+                      <p className="flex-1 text-sm font-bold text-gray-800">{a.action}</p>
                       <div className="shrink-0 text-right">
-                        <p className="text-[#4CAF50] font-black text-sm">+{a.expected_gain_qtl}</p>
+                        <p className="text-[#4CAF50] font-black text-base">+{a.expected_gain_qtl}</p>
                         <p className="text-gray-400 text-xs">qtl/acre</p>
                       </div>
                     </div>
