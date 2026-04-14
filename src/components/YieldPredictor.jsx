@@ -1,5 +1,8 @@
 import { useState } from "react";
 
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
 const SHOPIFY_URLS = {
   fungicide: "https://48cdqc-i6.myshopify.com/collections/all?filter.p.product_type=Fungicide&sort_by=title-ascending",
   insecticide: "https://48cdqc-i6.myshopify.com/collections/all?filter.p.product_type=Insecticide&sort_by=title-ascending",
@@ -106,17 +109,18 @@ const InputField = ({ label, value, onChange, placeholder, type = "text" }) => (
   </div>
 );
 
-async function callClaudeAPI(userPrompt, systemPrompt) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+async function callGeminiAPI(userPrompt) {
+  const response = await fetch(GEMINI_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
+      contents: [{
+        parts: [{ text: `${SYSTEM_PROMPT}\n\n${userPrompt}` }],
+      }],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 1024,
+      },
     }),
   });
 
@@ -126,7 +130,7 @@ async function callClaudeAPI(userPrompt, systemPrompt) {
   }
 
   const data = await response.json();
-  const text = data.content?.map((b) => b.text || "").join("") || "";
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
   const clean = text.replace(/```json|```/g, "").trim();
   return JSON.parse(clean);
 }
@@ -170,7 +174,7 @@ export default function YieldPredictor() {
 Return JSON analysis with yield prediction, limiting factors, and AgroWave product recommendations.`;
 
     try {
-      const parsed = await callClaudeAPI(userPrompt, SYSTEM_PROMPT);
+      const parsed = await callGeminiAPI(userPrompt);
       setResult(parsed);
     } catch (err) {
       console.error(err);
@@ -244,9 +248,9 @@ Return JSON analysis with yield prediction, limiting factors, and AgroWave produ
                 <>
                   <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373.0 0 5.373 0 12h4z" />
                   </svg>
-                  Predicting with Claude AI...
+                  Predicting with Gemini AI...
                 </>
               ) : (
                 <>📈 Predict My Yield & Get Recommendations</>
