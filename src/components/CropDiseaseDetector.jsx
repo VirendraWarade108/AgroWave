@@ -194,7 +194,7 @@ export default function CropDiseaseDetector() {
     setResult(null);
 
     try {
-      const parsed = await callGeminiAPI(imageBase64, imageMimeType, symptoms);
+      const parsed = await callAPI(imageBase64, imageMimeType, symptoms);
       setResult(parsed);
     } catch (err) {
       console.error(err);
