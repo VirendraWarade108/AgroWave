@@ -1,13 +1,30 @@
-import { useState } from "react";
+const OPENROUTER_API_KEY = "your_openrouter_key_here"; // paste your key
+const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-const SHOPIFY_URLS = {
-  fungicide: "https://48cdqc-i6.myshopify.com/collections/all?filter.p.product_type=Fungicide&sort_by=title-ascending",
-  insecticide: "https://48cdqc-i6.myshopify.com/collections/all?filter.p.product_type=Insecticide&sort_by=title-ascending",
-  herbicide: "https://48cdqc-i6.myshopify.com/collections/all?filter.p.product_type=Herbicide&sort_by=title-ascending",
-  all: "https://48cdqc-i6.myshopify.com/collections/all?sort_by=title-ascending",
-};
+async function callAPI(userPrompt) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "meta-llama/llama-3.3-70b-instruct:free",
+      max_tokens: 1024,
+      messages: [{ role: "user", content: `${SYSTEM_PROMPT}\n\n${userPrompt}` }],
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err?.error?.message || `API error ${response.status}`);
+  }
+
+  const data = await response.json();
+  const text = data.choices?.[0]?.message?.content || "";
+  const clean = text.replace(/```json|```/g, "").trim();
+  return JSON.parse(clean);
+}
 
 const PRODUCT_MAP = {
   "Acrobat Fungicide": { url: SHOPIFY_URLS.fungicide, price: "₹999" },
